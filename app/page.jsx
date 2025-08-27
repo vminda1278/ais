@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 
-export default function CSVAnalyzerPage() {
+export default function InvestmentAnalyzerPage() {
+  const [activeTab, setActiveTab] = useState("demat")
   const [file, setFile] = useState(null)
   const [csvData, setCsvData] = useState([])
   const [analyzedData, setAnalyzedData] = useState([])
@@ -273,7 +274,24 @@ export default function CSVAnalyzerPage() {
       })
 
       console.log("🎊 Analysis complete! Processed", analyzed.length, "rows")
-      setAnalyzedData(analyzed)
+      
+      // Sort analyzed data: Short Term first, then Long Term
+      const sortedAnalyzed = analyzed.sort((a, b) => {
+        // Primary sort: Short Term before Long Term
+        if (a['Gain Type'] !== b['Gain Type']) {
+          return a['Gain Type'] === 'Short Term' ? -1 : 1
+        }
+        // Secondary sort: by ISIN
+        if (a['ISIN'] !== b['ISIN']) {
+          return a['ISIN'].localeCompare(b['ISIN'])
+        }
+        // Tertiary sort: by Purchase Date (earliest first)
+        return new Date(a['Purchase Date'].split('-').reverse().join('-')) - 
+               new Date(b['Purchase Date'].split('-').reverse().join('-'))
+      })
+      
+      console.log("📈 Data sorted: Short Term first, then Long Term")
+      setAnalyzedData(sortedAnalyzed)
     } catch (err) {
       console.error("💥 Error processing CSV:", err)
       console.error("💥 Error stack:", err.stack)
@@ -374,12 +392,14 @@ export default function CSVAnalyzerPage() {
 
     console.log("📈 Aggregated data:", aggregatedData)
 
-    // Sort by ISIN, then by Gain Type
+    // Sort by Gain Type (Short Term first), then by ISIN
     aggregatedData.sort((a, b) => {
-      if (a['ISIN'] !== b['ISIN']) {
-        return a['ISIN'].localeCompare(b['ISIN'])
+      // Primary sort: Short Term before Long Term
+      if (a['Gain Type'] !== b['Gain Type']) {
+        return a['Gain Type'] === 'Short Term' ? -1 : 1
       }
-      return a['Gain Type'].localeCompare(b['Gain Type'])
+      // Secondary sort: by ISIN
+      return a['ISIN'].localeCompare(b['ISIN'])
     })
 
     // Create CSV content
@@ -423,6 +443,311 @@ export default function CSVAnalyzerPage() {
     setError("")
     setDebugInfo("")
   }
+
+  // Tab styling
+  const tabContainerStyle = {
+    display: "flex",
+    borderBottom: "2px solid #e0e0e0",
+    marginBottom: "30px",
+    backgroundColor: "#f8f9fa"
+  }
+
+  const tabStyle = {
+    padding: "15px 30px",
+    cursor: "pointer",
+    border: "none",
+    background: "none",
+    fontSize: "16px",
+    fontWeight: "500",
+    transition: "all 0.3s ease",
+    borderBottom: "3px solid transparent",
+    color: "#666"
+  }
+
+  const activeTabStyle = {
+    ...tabStyle,
+    color: "#2e7d32",
+    borderBottomColor: "#2e7d32",
+    backgroundColor: "white"
+  }
+
+  const DematDataTab = () => (
+    <div>
+      {/* File Upload Section */}
+      <div style={{ marginBottom: "30px" }}>
+        <div style={{
+          border: "2px dashed #ddd",
+          borderRadius: "12px",
+          padding: "30px",
+          textAlign: "center",
+          backgroundColor: "#fafafa"
+        }}>
+          <div style={{ marginBottom: "20px" }}>
+            <svg width="48" height="48" style={{ color: "#666", marginBottom: "10px" }}>
+              <rect width="48" height="48" fill="currentColor" rx="4" opacity="0.1"/>
+              <path d="M24 16L32 24H28V32H20V24H16L24 16Z" fill="currentColor"/>
+            </svg>
+            <p style={{ margin: "10px 0", color: "#666" }}>
+              {file ? `Selected: ${file.name}` : "Select CSV file or drag and drop"}
+            </p>
+          </div>
+          
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileUpload}
+            style={{
+              marginBottom: "15px",
+              padding: "8px",
+              border: "1px solid #ddd",
+              borderRadius: "4px"
+            }}
+          />
+          
+          <div>
+            <button 
+              onClick={processCSV} 
+              disabled={!file || isProcessing}
+              style={{
+                ...buttonStyle,
+                opacity: (!file || isProcessing) ? 0.6 : 1,
+                cursor: (!file || isProcessing) ? "not-allowed" : "pointer"
+              }}
+            >
+              {isProcessing ? "Processing..." : "Analyze CSV"} 📊
+            </button>
+            
+            {(csvData.length > 0 || analyzedData.length > 0) && (
+              <button onClick={reset} style={dangerButtonStyle}>
+                Reset 🔄
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Expected Format Info */}
+        <div style={{
+          marginTop: "20px",
+          padding: "15px",
+          backgroundColor: "#e3f2fd",
+          borderRadius: "8px",
+          border: "1px solid #bbdefb"
+        }}>
+          <h4 style={{ margin: "0 0 10px 0", color: "#1565c0" }}>Expected CSV Format:</h4>
+          <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
+            <strong>Headers:</strong> Purchase Date | Sale Date | Purchase Amount | Sale Amount | ISIN
+          </p>
+          <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
+            <strong>Date Format:</strong> DD-MM-YYYY (e.g., 05-02-2018)
+          </p>
+          <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
+            <strong>Amount Format:</strong> Numbers with or without commas (e.g., 2,880.37 or 2880.37)
+          </p>
+          <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
+            <strong>Delimiter:</strong> Tab-separated (TSV) or Comma-separated (CSV)
+          </p>
+          <p style={{ margin: "5px 0", fontSize: "12px", color: "#666", fontStyle: "italic" }}>
+            ✨ The app automatically detects delimiters and handles quoted values
+          </p>
+        </div>
+      </div>
+
+      {/* Debug Info Display */}
+      {debugInfo && (
+        <div style={{
+          padding: "15px",
+          backgroundColor: "#f5f5f5",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          marginBottom: "20px",
+          fontFamily: "monospace",
+          fontSize: "12px",
+          whiteSpace: "pre-line",
+          color: "#333"
+        }}>
+          <h4 style={{ margin: "0 0 10px 0", color: "#666", fontFamily: "system-ui" }}>Debug Information:</h4>
+          {debugInfo}
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div style={{
+          padding: "15px",
+          backgroundColor: "#ffebee",
+          border: "1px solid #f44336",
+          borderRadius: "8px",
+          marginBottom: "20px",
+          color: "#c62828"
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Results Section */}
+      {analyzedData.length > 0 && (
+        <div>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
+            flexWrap: "wrap",
+            gap: "10px"
+          }}>
+            <h3 style={{ margin: "0", color: "#2e7d32" }}>
+              Analysis Results ({analyzedData.length} records)
+            </h3>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button onClick={downloadAnalyzedCSV} style={secondaryButtonStyle}>
+                Download Detailed CSV 📥
+              </button>
+              <button onClick={downloadAggregatedCSV} style={{...buttonStyle, backgroundColor: "#9c27b0"}}>
+                Download Aggregated CSV 📊
+              </button>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "15px",
+            marginBottom: "25px"
+          }}>
+            <div style={{
+              padding: "15px",
+              backgroundColor: "#fff3e0",
+              borderRadius: "8px",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ef6c00" }}>
+                {analyzedData.filter(row => row['Gain Type'] === 'Short Term').length}
+              </div>
+              <div style={{ fontSize: "14px", color: "#666" }}>Short Term Gains</div>
+            </div>
+            <div style={{
+              padding: "15px",
+              backgroundColor: "#e8f5e8",
+              borderRadius: "8px",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#2e7d32" }}>
+                {analyzedData.filter(row => row['Gain Type'] === 'Long Term').length}
+              </div>
+              <div style={{ fontSize: "14px", color: "#666" }}>Long Term Gains</div>
+            </div>
+            <div style={{
+              padding: "15px",
+              backgroundColor: "#e3f2fd",
+              borderRadius: "8px",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1976d2" }}>
+                ₹{analyzedData.reduce((sum, row) => sum + parseFloat(row['Gain Amount']), 0).toFixed(2)}
+              </div>
+              <div style={{ fontSize: "14px", color: "#666" }}>Total Gains</div>
+            </div>
+          </div>
+
+          {/* Data Table */}
+          <div style={{ overflowX: "auto" }}>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Purchase Date</th>
+                  <th style={thStyle}>Sale Date</th>
+                  <th style={thStyle}>Purchase Amount</th>
+                  <th style={thStyle}>Sale Amount</th>
+                  <th style={thStyle}>ISIN</th>
+                  <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Gain Type</th>
+                  <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Gain Amount</th>
+                  <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Holding Period</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analyzedData.slice(0, 10).map((row, index) => (
+                  <tr key={index}>
+                    <td style={tdStyle}>{row['Purchase Date']}</td>
+                    <td style={tdStyle}>{row['Sale Date']}</td>
+                    <td style={tdStyle}>₹{row['Purchase Amount']}</td>
+                    <td style={tdStyle}>₹{row['Sale Amount']}</td>
+                    <td style={tdStyle}>{row['ISIN']}</td>
+                    <td style={{
+                      ...tdStyle,
+                      fontWeight: "bold",
+                      color: row['Gain Type'] === 'Long Term' ? '#2e7d32' : '#ef6c00'
+                    }}>
+                      {row['Gain Type']}
+                    </td>
+                    <td style={{
+                      ...tdStyle,
+                      fontWeight: "bold",
+                      color: parseFloat(row['Gain Amount']) >= 0 ? '#2e7d32' : '#d32f2f'
+                    }}>
+                      ₹{row['Gain Amount']}
+                    </td>
+                    <td style={tdStyle}>{row['Holding Period (Days)']} days</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {analyzedData.length > 10 && (
+              <p style={{ textAlign: "center", color: "#666", marginTop: "15px" }}>
+                Showing first 10 records. Download CSV to see all {analyzedData.length} records.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const AISDataTab = () => (
+    <div style={{
+      textAlign: "center",
+      padding: "60px 20px",
+      color: "#666"
+    }}>
+      <div style={{
+        maxWidth: "600px",
+        margin: "0 auto"
+      }}>
+        <svg width="64" height="64" style={{ color: "#ddd", marginBottom: "20px" }}>
+          <rect width="64" height="64" fill="currentColor" rx="8" opacity="0.3"/>
+          <path d="M32 20L40 28H36V40H28V28H24L32 20Z" fill="white"/>
+        </svg>
+        <h3 style={{
+          fontSize: "24px",
+          margin: "0 0 15px 0",
+          color: "#333"
+        }}>
+          AIS Data Analysis
+        </h3>
+        <p style={{
+          fontSize: "16px",
+          lineHeight: "1.6",
+          margin: "0 0 20px 0"
+        }}>
+          This section will contain AIS (Annual Information Statement) data analysis features.
+        </p>
+        <div style={{
+          padding: "20px",
+          backgroundColor: "#f8f9fa",
+          borderRadius: "8px",
+          border: "1px solid #e9ecef"
+        }}>
+          <p style={{
+            margin: "0",
+            fontSize: "14px",
+            fontStyle: "italic"
+          }}>
+            🚧 Coming Soon: Upload and analyze your AIS data files
+          </p>
+        </div>
+      </div>
+    </div>
+  )
 
   const cardStyle = {
     minHeight: "100vh",
@@ -503,240 +828,32 @@ export default function CSVAnalyzerPage() {
         {/* Header */}
         <div style={headerStyle}>
           <h1 style={titleStyle}>
-            Investment CSV Analyzer
+            Investment Data Analyzer
           </h1>
           <p style={{ color: "#666", margin: "0" }}>
-            Upload your investment CSV file to analyze Short Term vs Long Term gains
+            Analyze your investment data from Demat accounts and AIS statements
           </p>
         </div>
 
-        {/* File Upload Section */}
-        <div style={{ marginBottom: "30px" }}>
-          <div style={{
-            border: "2px dashed #ddd",
-            borderRadius: "12px",
-            padding: "30px",
-            textAlign: "center",
-            backgroundColor: "#fafafa"
-          }}>
-            <div style={{ marginBottom: "20px" }}>
-              <svg width="48" height="48" style={{ color: "#666", marginBottom: "10px" }}>
-                <rect width="48" height="48" fill="currentColor" rx="4" opacity="0.1"/>
-                <path d="M24 16L32 24H28V32H20V24H16L24 16Z" fill="currentColor"/>
-              </svg>
-              <p style={{ margin: "10px 0", color: "#666" }}>
-                {file ? `Selected: ${file.name}` : "Select CSV file or drag and drop"}
-              </p>
-            </div>
-            
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              style={{
-                marginBottom: "15px",
-                padding: "8px",
-                border: "1px solid #ddd",
-                borderRadius: "4px"
-              }}
-            />
-            
-            <div>
-              <button 
-                onClick={processCSV} 
-                disabled={!file || isProcessing}
-                style={{
-                  ...buttonStyle,
-                  opacity: (!file || isProcessing) ? 0.6 : 1,
-                  cursor: (!file || isProcessing) ? "not-allowed" : "pointer"
-                }}
-              >
-                {isProcessing ? "Processing..." : "Analyze CSV"} 📊
-              </button>
-              
-              {(csvData.length > 0 || analyzedData.length > 0) && (
-                <button onClick={reset} style={dangerButtonStyle}>
-                  Reset 🔄
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Expected Format Info */}
-          <div style={{
-            marginTop: "20px",
-            padding: "15px",
-            backgroundColor: "#e3f2fd",
-            borderRadius: "8px",
-            border: "1px solid #bbdefb"
-          }}>
-            <h4 style={{ margin: "0 0 10px 0", color: "#1565c0" }}>Expected CSV Format:</h4>
-            <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
-              <strong>Headers:</strong> Purchase Date | Sale Date | Purchase Amount | Sale Amount | ISIN
-            </p>
-            <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
-              <strong>Date Format:</strong> DD-MM-YYYY (e.g., 05-02-2018)
-            </p>
-            <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
-              <strong>Amount Format:</strong> Numbers with or without commas (e.g., 2,880.37 or 2880.37)
-            </p>
-            <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
-              <strong>Delimiter:</strong> Tab-separated (TSV) or Comma-separated (CSV)
-            </p>
-            <p style={{ margin: "5px 0", fontSize: "12px", color: "#666", fontStyle: "italic" }}>
-              ✨ The app automatically detects delimiters and handles quoted values
-            </p>
-          </div>
+        {/* Tab Navigation */}
+        <div style={tabContainerStyle}>
+          <button
+            style={activeTab === "demat" ? activeTabStyle : tabStyle}
+            onClick={() => setActiveTab("demat")}
+          >
+            📊 Demat Data
+          </button>
+          <button
+            style={activeTab === "ais" ? activeTabStyle : tabStyle}
+            onClick={() => setActiveTab("ais")}
+          >
+            📋 AIS Data
+          </button>
         </div>
 
-        {/* Debug Info Display */}
-        {debugInfo && (
-          <div style={{
-            padding: "15px",
-            backgroundColor: "#f5f5f5",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            marginBottom: "20px",
-            fontFamily: "monospace",
-            fontSize: "12px",
-            whiteSpace: "pre-line",
-            color: "#333"
-          }}>
-            <h4 style={{ margin: "0 0 10px 0", color: "#666", fontFamily: "system-ui" }}>Debug Information:</h4>
-            {debugInfo}
-          </div>
-        )}
-
-        {/* Error Display */}
-        {error && (
-          <div style={{
-            padding: "15px",
-            backgroundColor: "#ffebee",
-            border: "1px solid #f44336",
-            borderRadius: "8px",
-            marginBottom: "20px",
-            color: "#c62828"
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* Results Section */}
-        {analyzedData.length > 0 && (
-          <div>
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-              flexWrap: "wrap",
-              gap: "10px"
-            }}>
-              <h3 style={{ margin: "0", color: "#2e7d32" }}>
-                Analysis Results ({analyzedData.length} records)
-              </h3>
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <button onClick={downloadAnalyzedCSV} style={secondaryButtonStyle}>
-                  Download Detailed CSV 📥
-                </button>
-                <button onClick={downloadAggregatedCSV} style={{...buttonStyle, backgroundColor: "#9c27b0"}}>
-                  Download Aggregated CSV 📊
-                </button>
-              </div>
-            </div>
-
-            {/* Summary Stats */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "15px",
-              marginBottom: "25px"
-            }}>
-              <div style={{
-                padding: "15px",
-                backgroundColor: "#e8f5e8",
-                borderRadius: "8px",
-                textAlign: "center"
-              }}>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#2e7d32" }}>
-                  {analyzedData.filter(row => row['Gain Type'] === 'Long Term').length}
-                </div>
-                <div style={{ fontSize: "14px", color: "#666" }}>Long Term Gains</div>
-              </div>
-              <div style={{
-                padding: "15px",
-                backgroundColor: "#fff3e0",
-                borderRadius: "8px",
-                textAlign: "center"
-              }}>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ef6c00" }}>
-                  {analyzedData.filter(row => row['Gain Type'] === 'Short Term').length}
-                </div>
-                <div style={{ fontSize: "14px", color: "#666" }}>Short Term Gains</div>
-              </div>
-              <div style={{
-                padding: "15px",
-                backgroundColor: "#e3f2fd",
-                borderRadius: "8px",
-                textAlign: "center"
-              }}>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1976d2" }}>
-                  ₹{analyzedData.reduce((sum, row) => sum + parseFloat(row['Gain Amount']), 0).toFixed(2)}
-                </div>
-                <div style={{ fontSize: "14px", color: "#666" }}>Total Gains</div>
-              </div>
-            </div>
-
-            {/* Data Table */}
-            <div style={{ overflowX: "auto" }}>
-              <table style={tableStyle}>
-                <thead>
-                  <tr>
-                    <th style={thStyle}>Purchase Date</th>
-                    <th style={thStyle}>Sale Date</th>
-                    <th style={thStyle}>Purchase Amount</th>
-                    <th style={thStyle}>Sale Amount</th>
-                    <th style={thStyle}>ISIN</th>
-                    <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Gain Type</th>
-                    <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Gain Amount</th>
-                    <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Holding Period</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analyzedData.slice(0, 10).map((row, index) => (
-                    <tr key={index}>
-                      <td style={tdStyle}>{row['Purchase Date']}</td>
-                      <td style={tdStyle}>{row['Sale Date']}</td>
-                      <td style={tdStyle}>₹{row['Purchase Amount']}</td>
-                      <td style={tdStyle}>₹{row['Sale Amount']}</td>
-                      <td style={tdStyle}>{row['ISIN']}</td>
-                      <td style={{
-                        ...tdStyle,
-                        fontWeight: "bold",
-                        color: row['Gain Type'] === 'Long Term' ? '#2e7d32' : '#ef6c00'
-                      }}>
-                        {row['Gain Type']}
-                      </td>
-                      <td style={{
-                        ...tdStyle,
-                        fontWeight: "bold",
-                        color: parseFloat(row['Gain Amount']) >= 0 ? '#2e7d32' : '#d32f2f'
-                      }}>
-                        ₹{row['Gain Amount']}
-                      </td>
-                      <td style={tdStyle}>{row['Holding Period (Days)']} days</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {analyzedData.length > 10 && (
-                <p style={{ textAlign: "center", color: "#666", marginTop: "15px" }}>
-                  Showing first 10 records. Download CSV to see all {analyzedData.length} records.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Tab Content */}
+        {activeTab === "demat" && <DematDataTab />}
+        {activeTab === "ais" && <AISDataTab />}
 
         {/* Footer */}
         <div style={{
@@ -750,7 +867,7 @@ export default function CSVAnalyzerPage() {
             color: "#999",
             margin: "0"
           }}>
-            Investment CSV Analyzer - Built with React & Next.js 📈
+            Investment Data Analyzer - Built with React & Next.js 📈
           </p>
         </div>
       </div>
