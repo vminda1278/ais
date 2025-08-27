@@ -927,43 +927,65 @@ ${data.slice(0, 3).map((row, idx) =>
       // Try different date formats
       let parsedDate = null
       
-      // Handle DD-MM-YYYY format
+      // Handle dates with dashes
       if (cleanDate.includes('-')) {
         const parts = cleanDate.split('-')
         if (parts.length === 3) {
-          // Try DD-MM-YYYY first
           let [first, second, third] = parts
-          parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
           
-          // If this results in an invalid date, try MM-DD-YYYY
-          if (isNaN(parsedDate.getTime())) {
-            console.log(`🔍 [DATE] DD-MM-YYYY failed, trying MM-DD-YYYY`)
-            parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
-          }
-          
-          // If still invalid, try YYYY-MM-DD
-          if (isNaN(parsedDate.getTime())) {
-            console.log(`🔍 [DATE] MM-DD-YYYY failed, trying YYYY-MM-DD`)
+          // Check if first part is 4 digits (likely YYYY-MM-DD format)
+          if (first.length === 4 && parseInt(first) > 1900) {
+            console.log(`🔍 [DATE] Detected YYYY-MM-DD format`)
             parsedDate = new Date(parseInt(first), parseInt(second) - 1, parseInt(third))
+          }
+          // Check if third part is 4 digits (likely DD-MM-YYYY format)
+          else if (third.length === 4 && parseInt(third) > 1900) {
+            console.log(`🔍 [DATE] Detected DD-MM-YYYY format`)
+            parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+          }
+          // Fallback: try DD-MM-YYYY first, then MM-DD-YYYY
+          else {
+            console.log(`🔍 [DATE] Trying DD-MM-YYYY format`)
+            parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+            
+            // If this results in an invalid date, try MM-DD-YYYY
+            if (isNaN(parsedDate.getTime())) {
+              console.log(`🔍 [DATE] DD-MM-YYYY failed, trying MM-DD-YYYY`)
+              parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+            }
           }
           
           console.log(`🔍 [DATE] Parsed "${cleanDate}" as: ${parsedDate}`)
         }
       }
       
-      // Handle DD/MM/YYYY format
+      // Handle dates with slashes
       if (!parsedDate || isNaN(parsedDate.getTime())) {
         if (cleanDate.includes('/')) {
           const parts = cleanDate.split('/')
           if (parts.length === 3) {
-            // Try DD/MM/YYYY first
             let [first, second, third] = parts
-            parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
             
-            // If this results in an invalid date, try MM/DD/YYYY
-            if (isNaN(parsedDate.getTime())) {
-              console.log(`🔍 [DATE] DD/MM/YYYY failed, trying MM/DD/YYYY`)
-              parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+            // Check if first part is 4 digits (likely YYYY/MM/DD format)
+            if (first.length === 4 && parseInt(first) > 1900) {
+              console.log(`🔍 [DATE] Detected YYYY/MM/DD format`)
+              parsedDate = new Date(parseInt(first), parseInt(second) - 1, parseInt(third))
+            }
+            // Check if third part is 4 digits (likely DD/MM/YYYY format)
+            else if (third.length === 4 && parseInt(third) > 1900) {
+              console.log(`🔍 [DATE] Detected DD/MM/YYYY format`)
+              parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+            }
+            // Fallback: try DD/MM/YYYY first, then MM/DD/YYYY
+            else {
+              console.log(`🔍 [DATE] Trying DD/MM/YYYY format`)
+              parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+              
+              // If this results in an invalid date, try MM/DD/YYYY
+              if (isNaN(parsedDate.getTime())) {
+                console.log(`🔍 [DATE] DD/MM/YYYY failed, trying MM/DD/YYYY`)
+                parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+              }
             }
             
             console.log(`🔍 [DATE] Parsed "${cleanDate}" as: ${parsedDate}`)
@@ -1219,6 +1241,50 @@ ${data.slice(0, 3).map((row, idx) =>
       console.log(`🧪 [TEST] Calculated Gain: ₹${result}`)
       
       return result
+    }
+
+    // Debug function for testing specific date holding period
+    window.testSpecificDates = (purchaseDate, saleDate) => {
+      console.log(`🧪 [DATE_TEST] Testing specific dates:`)
+      console.log(`🧪 [DATE_TEST] Purchase: "${purchaseDate}"`)
+      console.log(`🧪 [DATE_TEST] Sale: "${saleDate}"`)
+      
+      try {
+        const purchase = parseDate(purchaseDate)
+        const sale = parseDate(saleDate)
+        
+        console.log(`🧪 [DATE_TEST] Parsed Purchase: ${purchase}`)
+        console.log(`🧪 [DATE_TEST] Parsed Sale: ${sale}`)
+        console.log(`🧪 [DATE_TEST] Purchase timestamp: ${purchase.getTime()}`)
+        console.log(`🧪 [DATE_TEST] Sale timestamp: ${sale.getTime()}`)
+        
+        const diffTime = sale.getTime() - purchase.getTime()
+        const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        
+        console.log(`🧪 [DATE_TEST] Difference in ms: ${diffTime}`)
+        console.log(`🧪 [DATE_TEST] Difference in days: ${days}`)
+        
+        // Manual calculation for verification
+        const manualPurchase = new Date('2024-08-30')
+        const manualSale = new Date('2024-12-11')
+        const manualDiff = manualSale.getTime() - manualPurchase.getTime()
+        const manualDays = Math.ceil(manualDiff / (1000 * 60 * 60 * 24))
+        
+        console.log(`🧪 [DATE_TEST] Manual calculation:`)
+        console.log(`🧪 [DATE_TEST] Manual Purchase: ${manualPurchase}`)
+        console.log(`🧪 [DATE_TEST] Manual Sale: ${manualSale}`)
+        console.log(`🧪 [DATE_TEST] Manual Days: ${manualDays}`)
+        
+        return {
+          parsedPurchase: purchase,
+          parsedSale: sale,
+          calculatedDays: days,
+          manualDays: manualDays
+        }
+      } catch (error) {
+        console.error(`🧪 [DATE_TEST] Error:`, error)
+        return { error: error.message }
+      }
     }
   }
 
