@@ -1,8 +1,8 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Hello World React App',
-  description: 'A simple React web application',
+  title: 'Investment Data Analyzer',
+  description: 'Analyze your investment data from Demat accounts and AIS statements',
 }
 
 export default function RootLayout({ children }) {
