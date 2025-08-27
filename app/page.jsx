@@ -924,48 +924,66 @@ ${data.slice(0, 3).map((row, idx) =>
       // Clean the date string
       const cleanDate = dateString.trim()
       
+      // Try different date formats
+      let parsedDate = null
+      
       // Handle DD-MM-YYYY format
       if (cleanDate.includes('-')) {
         const parts = cleanDate.split('-')
         if (parts.length === 3) {
-          const [day, month, year] = parts
-          const parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+          // Try DD-MM-YYYY first
+          let [first, second, third] = parts
+          parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
           
-          // Validate the parsed date
+          // If this results in an invalid date, try MM-DD-YYYY
           if (isNaN(parsedDate.getTime())) {
-            throw new Error(`Invalid date parsed from: ${dateString}`)
+            console.log(`🔍 [DATE] DD-MM-YYYY failed, trying MM-DD-YYYY`)
+            parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
           }
           
-          console.log(`🔍 [DATE] Successfully parsed: ${dateString} -> ${parsedDate}`)
-          return parsedDate
+          // If still invalid, try YYYY-MM-DD
+          if (isNaN(parsedDate.getTime())) {
+            console.log(`🔍 [DATE] MM-DD-YYYY failed, trying YYYY-MM-DD`)
+            parsedDate = new Date(parseInt(first), parseInt(second) - 1, parseInt(third))
+          }
+          
+          console.log(`🔍 [DATE] Parsed "${cleanDate}" as: ${parsedDate}`)
         }
       }
       
       // Handle DD/MM/YYYY format
-      if (cleanDate.includes('/')) {
-        const parts = cleanDate.split('/')
-        if (parts.length === 3) {
-          const [day, month, year] = parts
-          const parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-          
-          // Validate the parsed date
-          if (isNaN(parsedDate.getTime())) {
-            throw new Error(`Invalid date parsed from: ${dateString}`)
+      if (!parsedDate || isNaN(parsedDate.getTime())) {
+        if (cleanDate.includes('/')) {
+          const parts = cleanDate.split('/')
+          if (parts.length === 3) {
+            // Try DD/MM/YYYY first
+            let [first, second, third] = parts
+            parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+            
+            // If this results in an invalid date, try MM/DD/YYYY
+            if (isNaN(parsedDate.getTime())) {
+              console.log(`🔍 [DATE] DD/MM/YYYY failed, trying MM/DD/YYYY`)
+              parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+            }
+            
+            console.log(`🔍 [DATE] Parsed "${cleanDate}" as: ${parsedDate}`)
           }
-          
-          console.log(`🔍 [DATE] Successfully parsed: ${dateString} -> ${parsedDate}`)
-          return parsedDate
         }
       }
       
       // Try direct Date parsing as fallback
-      const fallbackDate = new Date(cleanDate)
-      if (!isNaN(fallbackDate.getTime())) {
-        console.log(`🔍 [DATE] Fallback parsing successful: ${dateString} -> ${fallbackDate}`)
-        return fallbackDate
+      if (!parsedDate || isNaN(parsedDate.getTime())) {
+        parsedDate = new Date(cleanDate)
+        console.log(`🔍 [DATE] Fallback parsing "${cleanDate}" as: ${parsedDate}`)
       }
       
-      throw new Error(`Unable to parse date: ${dateString}`)
+      // Final validation
+      if (!parsedDate || isNaN(parsedDate.getTime())) {
+        throw new Error(`Unable to parse date: ${dateString}`)
+      }
+      
+      console.log(`✅ [DATE] Successfully parsed: ${dateString} -> ${parsedDate}`)
+      return parsedDate
     } catch (error) {
       console.error(`❌ [DATE] Error parsing date "${dateString}":`, error.message)
       throw error
@@ -978,15 +996,30 @@ ${data.slice(0, 3).map((row, idx) =>
   }
 
   const calculateGainType = (purchaseDate, saleDate) => {
-    const purchase = parseDate(purchaseDate)
-    const sale = parseDate(saleDate)
-    
-    // Calculate difference in days
-    const diffTime = sale.getTime() - purchase.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    // If held for more than 365 days (1 year), it's Long Term
-    return diffDays > 365 ? "Long Term" : "Short Term"
+    try {
+      const purchase = parseDate(purchaseDate)
+      const sale = parseDate(saleDate)
+      
+      let actualPurchase = purchase
+      let actualSale = sale
+      
+      // Check if dates are swapped
+      if (sale.getTime() < purchase.getTime()) {
+        console.warn(`⚠️ [GAIN_TYPE] Dates swapped in calculateGainType, correcting...`)
+        actualPurchase = sale
+        actualSale = purchase
+      }
+      
+      // Calculate difference in days
+      const diffTime = actualSale.getTime() - actualPurchase.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      // If held for more than 365 days (1 year), it's Long Term
+      return diffDays > 365 ? "Long Term" : "Short Term"
+    } catch (error) {
+      console.error(`❌ [GAIN_TYPE] Error in calculateGainType:`, error)
+      return "Short Term" // Default fallback
+    }
   }
 
   const calculateGainAmount = (purchaseAmount, saleAmount) => {
@@ -1329,23 +1362,36 @@ ${data.slice(0, 3).map((row, idx) =>
           const gainType = calculateGainType(row['Purchase Date'], row['Sale Date'])
           const gainAmount = calculateGainAmount(row['Purchase Amount'], row['Sale Amount'])
           
-          // Calculate holding period with better error handling
+          // Calculate holding period with better error handling and smart date handling
           let holdingPeriod = 0
           try {
             const purchaseDate = parseDate(row['Purchase Date'])
             const saleDate = parseDate(row['Sale Date'])
             
-            console.log(`🔍 [HOLDING] Purchase: "${row['Purchase Date']}" -> ${purchaseDate}`)
-            console.log(`🔍 [HOLDING] Sale: "${row['Sale Date']}" -> ${saleDate}`)
+            console.log(`🔍 [HOLDING] Raw Purchase: "${row['Purchase Date']}" -> ${purchaseDate}`)
+            console.log(`🔍 [HOLDING] Raw Sale: "${row['Sale Date']}" -> ${saleDate}`)
             
-            const diffTime = saleDate.getTime() - purchaseDate.getTime()
+            let actualPurchaseDate = purchaseDate
+            let actualSaleDate = saleDate
+            
+            // Check if dates are swapped (sale before purchase)
+            if (saleDate.getTime() < purchaseDate.getTime()) {
+              console.warn(`⚠️ [HOLDING] Dates appear to be swapped! Sale (${saleDate}) is before Purchase (${purchaseDate})`)
+              console.log(`🔄 [HOLDING] Swapping dates for correct calculation`)
+              actualPurchaseDate = saleDate
+              actualSaleDate = purchaseDate
+            }
+            
+            const diffTime = actualSaleDate.getTime() - actualPurchaseDate.getTime()
             holdingPeriod = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
             
+            console.log(`🔍 [HOLDING] Final Purchase: ${actualPurchaseDate}`)
+            console.log(`🔍 [HOLDING] Final Sale: ${actualSaleDate}`)
             console.log(`🔍 [HOLDING] Difference in days: ${holdingPeriod}`)
             
             // Ensure holding period is positive
             if (holdingPeriod < 0) {
-              console.warn(`⚠️ [HOLDING] Negative holding period detected: ${holdingPeriod}, setting to 0`)
+              console.warn(`⚠️ [HOLDING] Still negative holding period: ${holdingPeriod}, setting to 0`)
               holdingPeriod = 0
             }
           } catch (dateError) {
