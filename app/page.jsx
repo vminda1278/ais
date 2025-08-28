@@ -1746,12 +1746,17 @@ ${data.slice(0, 3).map((row, idx) =>
             }}
           />
           
-          <div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
             <button 
               onClick={processCSV} 
               disabled={!file || isProcessing}
               style={{
                 ...buttonStyle,
+                width: "200px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
                 opacity: (!file || isProcessing) ? 0.6 : 1,
                 cursor: (!file || isProcessing) ? "not-allowed" : "pointer"
               }}
@@ -1981,12 +1986,17 @@ ${data.slice(0, 3).map((row, idx) =>
             }}
           />
           
-          <div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
             <button 
               onClick={processAisCSV} 
               disabled={!aisFile || aisIsProcessing}
               style={{
                 ...buttonStyle,
+                width: "200px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
                 opacity: (!aisFile || aisIsProcessing) ? 0.6 : 1,
                 cursor: (!aisFile || aisIsProcessing) ? "not-allowed" : "pointer"
               }}
@@ -2260,13 +2270,18 @@ ${data.slice(0, 3).map((row, idx) =>
             </div>
           </div>
           
-          <div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "10px" }}>
             <button 
               onClick={processComparisonData} 
               disabled={!comparisonDematFile || !comparisonAisFile || comparisonIsProcessing}
               style={{
                 ...buttonStyle,
                 backgroundColor: "#6b7280",
+                width: "200px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
                 opacity: (!comparisonDematFile || !comparisonAisFile || comparisonIsProcessing) ? 0.6 : 1,
                 cursor: (!comparisonDematFile || !comparisonAisFile || comparisonIsProcessing) ? "not-allowed" : "pointer"
               }}
@@ -2288,9 +2303,9 @@ ${data.slice(0, 3).map((row, idx) =>
         <div style={{
           marginTop: "20px",
           padding: "15px",
-          backgroundColor: "#e8f5e8",
+          backgroundColor: "#ccc",
           borderRadius: "8px",
-          border: "1px solid #c8e6c9"
+          border: "1px solid #ccc"
         }}>
           <h4 style={{ margin: "0 0 10px 0", color: "#374151" }}>Comparison Features:</h4>
           <ul style={{ margin: "5px 0", fontSize: "14px", color: "#333", paddingLeft: "20px" }}>
@@ -2547,7 +2562,7 @@ ${data.slice(0, 3).map((row, idx) =>
 
   const handleWhatsAppClick = () => {
     const phoneNumber = "+919741008286"
-    const message = "Hi! I need support/feedback/feature request for Investment Data Analyzer."
+    const message = "Hi! I need support/feedback/feature request for Demat Data Analyzer."
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
   }
@@ -2613,7 +2628,7 @@ ${data.slice(0, 3).map((row, idx) =>
             <a 
               href="/"
               className="flex items-center gap-2 no-underline text-gray-900 hover:text-gray-700 transition-colors"
-              title="Investment Data Analyzer - Home"
+              title="AIS Equity Analyzer - Home"
             >
               <div className="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-700">
                 <BarChart3 size={20} className="text-gray-700" />
@@ -2636,33 +2651,11 @@ ${data.slice(0, 3).map((row, idx) =>
           </div>
           
           <h1 className="text-4xl font-extrabold text-gray-900 mb-4 bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent">
-            Investment Data Analyzer
+            IT AIS Securities Analyzer
           </h1>
           <p className="text-gray-600 text-lg">
-            Analyze your investment data from Demat accounts and AIS statements
+            Compare your investment data from Demat accounts and AIS statements
           </p>
-          
-          {/* Company Master Status */}
-          <div className={`mt-4 px-3 py-2 rounded text-xs font-medium inline-block ${
-            companyMasterLoaded 
-              ? "bg-gray-100 text-gray-800 border border-gray-200" 
-              : "bg-gray-50 text-gray-600 border border-gray-300"
-          }`}>
-            {companyMasterLoaded 
-              ? (
-                <span>
-                  <CheckCircle className="w-3 h-3 inline mr-1 text-gray-600" />
-                  Company Master Data Loaded ({companyMasterData.size} companies)
-                </span>
-              )
-              : (
-                <span>
-                  <Clock className="w-3 h-3 inline mr-1 text-gray-500" />
-                  Loading company master data...
-                </span>
-              )
-            }
-          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -2673,7 +2666,7 @@ ${data.slice(0, 3).map((row, idx) =>
             className="flex-1"
           >
             <BarChart3 className="w-4 h-4 mr-2" />
-            Demat Data
+            Demat Analysis
           </Button>
           <Button
             variant={activeTab === "ais" ? "default" : "ghost"}
@@ -2681,7 +2674,7 @@ ${data.slice(0, 3).map((row, idx) =>
             className="flex-1"
           >
             <FileText className="w-4 h-4 mr-2" />
-            AIS Data
+            AIS Analysis
           </Button>
           <Button
             variant={activeTab === "comparison" ? "default" : "ghost"}
@@ -2689,7 +2682,7 @@ ${data.slice(0, 3).map((row, idx) =>
             className="flex-1"
           >
             <Search className="w-4 h-4 mr-2" />
-            Comparison
+            Compare
           </Button>
         </div>
 
