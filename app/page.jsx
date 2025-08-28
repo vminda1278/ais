@@ -2538,7 +2538,7 @@ ${data.slice(0, 3).map((row, idx) =>
   }
 
   const titleStyle = {
-    fontSize: "2.5em",
+    fontSize: "1.5em",
     margin: "0 0 10px 0",
     background: "linear-gradient(135deg, #2e7d32, #1976d2)",
     WebkitBackgroundClip: "text",
@@ -2594,6 +2594,59 @@ ${data.slice(0, 3).map((row, idx) =>
       <div style={containerStyle}>
         {/* Header */}
         <div style={headerStyle}>
+          {/* Logo */}
+          <div style={{ position: "absolute", top: "10px", left: "20px" }}>
+            <a 
+              href="/"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                textDecoration: "none",
+                color: "inherit"
+              }}
+              title="Investment Data Analyzer - Home"
+            >
+              <div style={{
+                height: "32px",
+                width: "32px",
+                backgroundColor: "#e8f5e8",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#3b82f6"
+              }}>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ color: "#3b82f6" }}
+                >
+                  <path
+                    d="M3 6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V6Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="currentColor"
+                    fillOpacity="0.1"
+                  />
+                  <path d="M7 8H17M7 12H17M7 16H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="17" cy="8" r="1" fill="currentColor" />
+                  <circle cx="17" cy="12" r="1" fill="currentColor" />
+                </svg>
+              </div>
+              <span style={{
+                fontSize: "18px",
+                fontWeight: "bold",
+                color: "#3b82f6"
+              }}>
+               Easy Bank Summary
+              </span>
+            </a>
+          </div>
+
           <div style={{ position: "absolute", top: "10px", right: "20px" }}>
             <button 
               onClick={handleWhatsAppClick}
@@ -2615,9 +2668,9 @@ ${data.slice(0, 3).map((row, idx) =>
             </button>
           </div>
           
-          <h1 style={titleStyle}>
+          <h2 style={titleStyle}>
             Investment Data Analyzer
-          </h1>
+          </h2>
           <p style={{ color: "#666", margin: "0" }}>
             Analyze your investment data from Demat accounts and AIS statements
           </p>
