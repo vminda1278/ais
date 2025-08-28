@@ -1,8 +1,8 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Investment Data Analyzer',
-  description: 'Analyze your investment data from Demat accounts and AIS statements',
+  title: 'Income Tax AIS & Equity Data Analyzer',
+  description: 'Compare your investment data from Demat accounts and Income Tax AIS statements',
 }
 
 export default function RootLayout({ children }) {
