@@ -2653,6 +2653,9 @@ ${data.slice(0, 3).map((row, idx) =>
           
           <h1 className="text-4xl font-extrabold text-gray-900 mb-4 bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent">
             IT AIS Securities Analyzer
+            <sup className="text-xs font-normal text-orange-500 ml-1 bg-orange-100 px-1.5 py-0.5 rounded-md">
+              Beta
+            </sup>
           </h1>
           <p className="text-gray-600 text-lg">
             Compare your investment data from Demat accounts and AIS statements
