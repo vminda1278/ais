@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
+import Link from "next/link"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Upload, MessageCircle, FileText, BarChart3, Download, TrendingUp, Search, RotateCcw, CheckCircle, Clock } from "lucide-react"
@@ -2624,21 +2625,21 @@ ${data.slice(0, 3).map((row, idx) =>
       <div className="bg-white p-10 rounded-2xl shadow-xl max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 relative">{/* Logo */}
-          <div className="absolute top-4 left-0">
-            <a 
-              href="/"
-              className="flex items-center gap-2 no-underline text-gray-900 hover:text-gray-700 transition-colors"
-              title="AIS Equity Analyzer - Home"
-            >
-              <div className="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-700">
-                <BarChart3 size={20} className="text-gray-700" />
-              </div>
-              <span className="text-lg font-bold text-gray-900">
-                Investment Analyzer
-              </span>
-            </a>
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center cursor-pointer">
+            <div className="bg-indigo-600 rounded-lg p-2 mr-3">
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+                </svg>
+            </div>
+            <span className="text-xl font-semibold text-gray-900">ezBankSummary</span>
+            </Link>
           </div>
-
           <div className="absolute top-4 right-0">
             <Button 
               onClick={handleWhatsAppClick}
