@@ -106,8 +106,70 @@ export default function InvestmentAnalyzerPage() {
     loadCompanyMasterData()
   }, [])
 
+  // Enhanced ISIN validation function
+  const isValidISINFormat = (isin) => {
+    if (!isin || isin.length !== 12) {
+      return false
+    }
+    // First 2 characters should be country code (letters)
+    const countryCode = isin.substring(0, 2)
+    if (!/^[A-Z]{2}$/.test(countryCode)) {
+      return false
+    }
+    // Next 9 characters should be alphanumeric
+    const securityCode = isin.substring(2, 11)
+    if (!/^[A-Z0-9]{9}$/.test(securityCode)) {
+      return false
+    }
+    // Last character should be a check digit (numeric)
+    const checkDigit = isin.substring(11, 12)
+    if (!/^[0-9]$/.test(checkDigit)) {
+      return false
+    }
+    return true
+  }
+
+  // Extract ISIN from various text formats
+  const extractISINFromText = (input) => {
+    if (!input || typeof input !== 'string') {
+      return null
+    }
+    const cleanInput = input.trim()
+    // ISIN pattern: 2 letters followed by 10 alphanumeric characters
+    const isinPattern = /([A-Z]{2}[A-Z0-9]{10})/g
+    const matches = cleanInput.match(isinPattern)
+    if (matches && matches.length > 0) {
+      // Return the first valid ISIN found
+      for (const match of matches) {
+        if (isValidISINFormat(match)) {
+          return match
+        }
+      }
+    }
+    return null
+  }
+
+  // Clean up company name by removing common suffixes
+  const cleanCompanyName = (name) => {
+    if (!name) return ''
+    let cleaned = name.trim()
+    const suffixesToRemove = [
+      'EQUITY SHARES', 'EQUITY SHARE', 'LIMITED', 'LTD', 'LTD.',
+      'COMPANY', 'CO.', 'INC', 'INC.', 'PVT', 'PVT.', 'PRIVATE', 'PUBLIC',
+      'EQUITY SHARES OF RS 5/- EACH', 'EQUITY SHARES OF RS 10/- EACH',
+      'EQUITY SHARES OF RS 1/- EACH', 'EQUITY SHARES OF RS 2/- EACH'
+    ]
+    for (const suffix of suffixesToRemove) {
+      const regex = new RegExp('\\s*' + suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'i')
+      cleaned = cleaned.replace(regex, '').trim()
+    }
+    // Remove trailing special characters
+    cleaned = cleaned.replace(/[#\-\(\)\s]+$/, '').trim()
+    return cleaned
+  }
+
   const extractISINAndNameFromEquity = (equityField) => {
-    console.log(`🔍 [DEBUG] ===== ISIN & NAME EXTRACTION START =====`)
+    console.log(`🔍 [DEBUG] ===== ENHANCED ISIN & NAME EXTRACTION START =====`)
     console.log(`🔍 [DEBUG] Input: ${JSON.stringify(equityField)}`)
     console.log(`🔍 [DEBUG] Company Master Loaded: ${companyMasterLoaded}, Records: ${companyMasterData.size}`)
     
@@ -115,62 +177,133 @@ export default function InvestmentAnalyzerPage() {
       console.log("❌ [DEBUG] Invalid equity field")
       return { isin: '', name: '' }
     }
-    
-    // Extract ISIN using existing logic
-    const lastOpenParen = equityField.lastIndexOf('(')
-    const lastCloseParen = equityField.lastIndexOf(')')
-    
+
+    const cleanInput = equityField.trim()
     let isin = ''
+    let companyName = ''
+
+    // Method 1: Look for ISIN in parentheses (most common format)
+    // Examples: "TATA ELXSI LIMITED EQUITY SHARES(INE670A01012)"
+    const lastOpenParen = cleanInput.lastIndexOf('(')
+    const lastCloseParen = cleanInput.lastIndexOf(')')
+    
     if (lastOpenParen !== -1 && lastCloseParen !== -1 && lastOpenParen < lastCloseParen) {
-      const content = equityField.substring(lastOpenParen + 1, lastCloseParen)
+      const content = cleanInput.substring(lastOpenParen + 1, lastCloseParen)
       console.log(`🔍 [DEBUG] Content between last parentheses: "${content}"`)
       
-      // Check if it looks like an ISIN
-      const isISIN = content.length === 12 && content.startsWith('INE')
-      
-      if (isISIN) {
+      if (isValidISINFormat(content)) {
         isin = content.toUpperCase()
-        console.log(`✅ [DEBUG] SUCCESS! Extracted ISIN: "${isin}"`)
+        console.log(`✅ [DEBUG] Method 1 SUCCESS! Extracted ISIN from parentheses: "${isin}"`)
+        companyName = cleanInput.substring(0, lastOpenParen).trim()
+        companyName = cleanCompanyName(companyName)
+        console.log(`✅ [DEBUG] Extracted company name: "${companyName}"`)
       }
     }
-    
-    // Now look up the company name from master data using ISIN
-    let companyName = ''
+
+    // Method 2: Look for ISIN after dash or other separators
+    // Examples: "TATA ELXSI LIMITED EQUITY SHARES - INE670A01012"
+    if (!isin) {
+      console.log(`🔍 [DEBUG] Method 1 failed, trying Method 2 (separators)`)
+      const separators = [' - ', ' # ', ' EQ ', ' EQUITY ', ' : ', '\t']
+      
+      for (const separator of separators) {
+        const separatorIndex = cleanInput.indexOf(separator)
+        if (separatorIndex !== -1) {
+          const afterSeparator = cleanInput.substring(separatorIndex + separator.length).trim()
+          const potentialISIN = extractISINFromText(afterSeparator)
+          
+          if (potentialISIN && isValidISINFormat(potentialISIN)) {
+            isin = potentialISIN.toUpperCase()
+            companyName = cleanCompanyName(cleanInput.substring(0, separatorIndex))
+            console.log(`✅ [DEBUG] Method 2 SUCCESS! Found ISIN after "${separator}": "${isin}"`)
+            console.log(`✅ [DEBUG] Extracted company name: "${companyName}"`)
+            break
+          }
+        }
+      }
+    }
+
+    // Method 3: Direct ISIN pattern search anywhere in the text
+    if (!isin) {
+      console.log(`🔍 [DEBUG] Method 2 failed, trying Method 3 (direct pattern search)`)
+      const directISIN = extractISINFromText(cleanInput)
+      
+      if (directISIN && isValidISINFormat(directISIN)) {
+        isin = directISIN.toUpperCase()
+        console.log(`✅ [DEBUG] Method 3 SUCCESS! Found ISIN in text: "${isin}"`)
+        
+        if (cleanInput.trim() === directISIN) {
+          companyName = ''
+          console.log(`🔍 [DEBUG] Input is pure ISIN, no company name`)
+        } else {
+          let nameCandidate = cleanInput.replace(directISIN, '').trim()
+          nameCandidate = nameCandidate.replace(/^\(|\)$/g, '').trim()
+          nameCandidate = nameCandidate.replace(/^[-#\s]+|[-#\s]+$/g, '').trim()
+          companyName = cleanCompanyName(nameCandidate)
+          console.log(`✅ [DEBUG] Extracted company name after removing ISIN: "${companyName}"`)
+        }
+      }
+    }
+
+    // If no ISIN found, extract company name anyway
+    if (!isin) {
+      console.log(`❌ [DEBUG] No valid ISIN found using any method`)
+      companyName = cleanCompanyName(cleanInput)
+      console.log(`🔍 [DEBUG] Fallback: extracted company name without ISIN: "${companyName}"`)
+    }
+
+    // Look up additional company info from master data if we have ISIN
     if (isin) {
       console.log(`🔍 [DEBUG] Looking up ISIN "${isin}" in master data...`)
       
       if (!companyMasterLoaded) {
-        console.log(`⚠️ [DEBUG] Company master data not loaded yet, using fallback`)
+        console.log(`⚠️ [DEBUG] Company master data not loaded yet, keeping extracted name`)
       } else if (companyMasterData.has(isin)) {
         const masterRecord = companyMasterData.get(isin)
-        companyName = masterRecord.name
-        console.log(`✅ [DEBUG] Found company name in master data: "${companyName}"`)
+        const masterName = masterRecord.name
+        console.log(`✅ [DEBUG] Found company name in master data: "${masterName}"`)
+        
+        // Use master data name if we don't have a good extracted name
+        if (!companyName || companyName.length < masterName.length * 0.7) {
+          console.log(`🔄 [DEBUG] Using master data name instead of extracted name`)
+          companyName = masterName
+        }
       } else {
         console.log(`⚠️ [DEBUG] ISIN "${isin}" not found in company master data`)
         console.log(`🔍 [DEBUG] Available ISINs sample:`, Array.from(companyMasterData.keys()).slice(0, 5))
       }
+    }
+    
+    console.log(`🔍 [DEBUG] ===== FINAL RESULT =====`)
+    console.log(`🔍 [DEBUG] ISIN: "${isin}"`)
+    console.log(`🔍 [DEBUG] Company Name: "${companyName}"`)
+    // Look up additional company info from master data if we have ISIN
+    if (isin) {
+      console.log(`🔍 [DEBUG] Looking up ISIN "${isin}" in master data...`)
       
-      // If we don't have a name from master data, use fallback
-      if (!companyName) {
-        console.log(`🔍 [DEBUG] Using fallback extraction from equity field`)
+      if (!companyMasterLoaded) {
+        console.log(`⚠️ [DEBUG] Company master data not loaded yet, keeping extracted name`)
+      } else if (companyMasterData.has(isin)) {
+        const masterRecord = companyMasterData.get(isin)
+        const masterName = masterRecord.name
+        console.log(`✅ [DEBUG] Found company name in master data: "${masterName}"`)
         
-        // Fallback: Extract equity name from field (everything before #, -, EQ, or EQUITY)
-        const separators = ['#', ' - ', ' EQ', ' EQUITY', '(']
-        let separatorPos = equityField.length
-        
-        for (const sep of separators) {
-          const pos = equityField.indexOf(sep)
-          if (pos !== -1 && pos < separatorPos) {
-            separatorPos = pos
-          }
+        // Use master data name if we don't have a good extracted name
+        if (!companyName || companyName.length < masterName.length * 0.7) {
+          console.log(`� [DEBUG] Using master data name instead of extracted name`)
+          companyName = masterName
         }
-        
-        companyName = equityField.substring(0, separatorPos).trim()
-        console.log(`🔍 [DEBUG] Fallback extracted name: "${companyName}"`)
+      } else {
+        console.log(`⚠️ [DEBUG] ISIN "${isin}" not found in company master data`)
+        console.log(`🔍 [DEBUG] Available ISINs sample:`, Array.from(companyMasterData.keys()).slice(0, 5))
       }
     }
     
+    console.log(`🔍 [DEBUG] ===== FINAL RESULT =====`)
+    console.log(`🔍 [DEBUG] ISIN: "${isin}"`)
+    console.log(`🔍 [DEBUG] Company Name: "${companyName}"`)
     console.log(`🔍 [DEBUG] ===== EXTRACTION END =====`)
+    
     return { isin, name: companyName }
   }
 
@@ -178,6 +311,17 @@ export default function InvestmentAnalyzerPage() {
   const extractISINFromEquity = (equityField) => {
     const result = extractISINAndNameFromEquity(equityField)
     return result.isin
+  }
+
+  // Enhanced test function for immediate testing
+  const testEnhancedISIN = (input) => {
+    console.log(`🧪 Testing Enhanced ISIN extraction with: "${input}"`)
+    const result = extractISINAndNameFromEquity(input)
+    console.log(`✅ Result:`, result)
+    if (result.isin) {
+      console.log(`✅ ISIN Format Valid: ${isValidISINFormat(result.isin)}`)
+    }
+    return result
   }
 
   // Make the function available globally for testing
@@ -1166,11 +1310,39 @@ ${data.slice(0, 3).map((row, idx) =>
       })
     }
     window.testExtractISINAndName = (equityField) => {
-      console.log("Testing ISIN and Name extraction for:", equityField)
+      console.log("Testing Enhanced ISIN and Name extraction for:", equityField)
       const result = extractISINAndNameFromEquity(equityField)
       console.log("Result:", result)
       return result
     }
+    
+    // Add enhanced testing functions
+    window.testEnhancedISIN = testEnhancedISIN
+    window.isValidISINFormat = isValidISINFormat
+    window.extractISINFromText = extractISINFromText
+    window.cleanCompanyName = cleanCompanyName
+    
+    // Quick test for all formats
+    window.testAllISINFormats = () => {
+      const testCases = [
+        "INE670A01012",
+        "TATA ELXSI LIMITED EQUITY SHARES(INE670A01012)",
+        "TATA ELXSI LIMITED EQUITY SHARES - INE670A01012",
+        "RELIANCE INDUSTRIES LTD: INE002A01018",
+        "HDFC BANK\tINE040A01034",
+        "INFOSYS # INE009A01021"
+      ]
+      
+      console.log("🚀 Testing all ISIN formats...")
+      testCases.forEach((test, i) => {
+        console.log(`\n${i+1}. Testing: "${test}"`)
+        testEnhancedISIN(test)
+      })
+    }
+    
+    console.log("🎯 Enhanced ISIN functions available!")
+    console.log("Try: window.testEnhancedISIN('TATA ELXSI LIMITED EQUITY SHARES - INE670A01012')")
+    console.log("Or: window.testAllISINFormats()")
     window.reloadCompanyMaster = () => {
       console.log("🔄 Reloading company master data...")
       loadCompanyMasterData()
