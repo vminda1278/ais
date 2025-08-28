@@ -1,6 +1,9 @@
 "use client"
 
 import React, { useState } from "react"
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
+import { Upload, MessageCircle, FileText, BarChart3, Download, TrendingUp, Search, RotateCcw, CheckCircle, Clock } from "lucide-react"
 
 export default function InvestmentAnalyzerPage() {
   const [activeTab, setActiveTab] = useState("demat")
@@ -1708,8 +1711,8 @@ ${data.slice(0, 3).map((row, idx) =>
 
   const activeTabStyle = {
     ...tabStyle,
-    color: "#2e7d32",
-    borderBottomColor: "#2e7d32",
+    color: "#374151",
+    borderBottomColor: "#374151",
     backgroundColor: "white"
   }
 
@@ -1725,10 +1728,7 @@ ${data.slice(0, 3).map((row, idx) =>
           backgroundColor: "#fafafa"
         }}>
           <div style={{ marginBottom: "20px" }}>
-            <svg width="48" height="48" style={{ color: "#666", marginBottom: "10px" }}>
-              <rect width="48" height="48" fill="currentColor" rx="4" opacity="0.1"/>
-              <path d="M24 16L32 24H28V32H20V24H16L24 16Z" fill="currentColor"/>
-            </svg>
+            <Upload size={48} className="text-gray-400 mb-2" />
             <p style={{ margin: "10px 0", color: "#666" }}>
               {file ? `Selected: ${file.name}` : "Select CSV file or drag and drop"}
             </p>
@@ -1756,12 +1756,14 @@ ${data.slice(0, 3).map((row, idx) =>
                 cursor: (!file || isProcessing) ? "not-allowed" : "pointer"
               }}
             >
-              {isProcessing ? "Processing..." : "Analyze CSV"} 📊
+              <BarChart3 className="w-4 h-4" />
+              {isProcessing ? "Processing..." : "Analyze CSV"}
             </button>
             
             {(csvData.length > 0 || analyzedData.length > 0) && (
               <button onClick={reset} style={dangerButtonStyle}>
-                Reset 🔄
+                <RotateCcw className="w-4 h-4 inline mr-2" />
+                Reset
               </button>
             )}
           </div>
@@ -1771,11 +1773,11 @@ ${data.slice(0, 3).map((row, idx) =>
         <div style={{
           marginTop: "20px",
           padding: "15px",
-          backgroundColor: "#e3f2fd",
+          backgroundColor: "#f3f4f6",
           borderRadius: "8px",
-          border: "1px solid #bbdefb"
+          border: "1px solid #d1d5db"
         }}>
-          <h4 style={{ margin: "0 0 10px 0", color: "#1565c0" }}>Expected CSV Format:</h4>
+          <h4 style={{ margin: "0 0 10px 0", color: "#374151" }}>Expected CSV Format:</h4>
           <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
             <strong>Headers:</strong> Purchase Date | Sale Date | Purchase Amount | Sale Amount | ISIN
           </p>
@@ -1837,15 +1839,17 @@ ${data.slice(0, 3).map((row, idx) =>
             flexWrap: "wrap",
             gap: "10px"
           }}>
-            <h3 style={{ margin: "0", color: "#2e7d32" }}>
+            <h3 style={{ margin: "0", color: "#374151" }}>
               Analysis Results ({analyzedData.length} records)
             </h3>
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <button onClick={downloadAnalyzedCSV} style={secondaryButtonStyle}>
-                Download Detailed CSV 📥
+                <Download className="w-4 h-4 inline mr-2" />
+                Download Detailed CSV
               </button>
-              <button onClick={downloadAggregatedCSV} style={{...buttonStyle, backgroundColor: "#9c27b0"}}>
-                Download Aggregated CSV 📊
+              <button onClick={downloadAggregatedCSV} style={{...buttonStyle, backgroundColor: "#6b7280"}}>
+                <BarChart3 className="w-4 h-4 inline mr-2" />
+                Download Aggregated CSV
               </button>
             </div>
           </div>
@@ -1859,11 +1863,11 @@ ${data.slice(0, 3).map((row, idx) =>
           }}>
             <div style={{
               padding: "15px",
-              backgroundColor: "#fff3e0",
+              backgroundColor: "#f9fafb",
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ef6c00" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#6b7280" }}>
                 {analyzedData.filter(row => row['Gain Type'] === 'Short Term').length}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Short Term Gains</div>
@@ -1874,18 +1878,18 @@ ${data.slice(0, 3).map((row, idx) =>
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#2e7d32" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 {analyzedData.filter(row => row['Gain Type'] === 'Long Term').length}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Long Term Gains</div>
             </div>
             <div style={{
               padding: "15px",
-              backgroundColor: "#e3f2fd",
+              backgroundColor: "#f3f4f6",
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1976d2" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 ₹{analyzedData.reduce((sum, row) => sum + parseFloat(row['Gain Amount']), 0).toFixed(2)}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Total Gains</div>
@@ -1920,14 +1924,14 @@ ${data.slice(0, 3).map((row, idx) =>
                     <td style={{
                       ...tdStyle,
                       fontWeight: "bold",
-                      color: row['Gain Type'] === 'Long Term' ? '#2e7d32' : '#ef6c00'
+                      color: row['Gain Type'] === 'Long Term' ? '#374151' : '#6b7280'
                     }}>
                       {row['Gain Type']}
                     </td>
                     <td style={{
                       ...tdStyle,
                       fontWeight: "bold",
-                      color: parseFloat(row['Gain Amount']) >= 0 ? '#2e7d32' : '#d32f2f'
+                      color: parseFloat(row['Gain Amount']) >= 0 ? '#374151' : '#6b7280'
                     }}>
                       ₹{row['Gain Amount']}
                     </td>
@@ -1959,10 +1963,7 @@ ${data.slice(0, 3).map((row, idx) =>
           backgroundColor: "#fafafa"
         }}>
           <div style={{ marginBottom: "20px" }}>
-            <svg width="48" height="48" style={{ color: "#666", marginBottom: "10px" }}>
-              <rect width="48" height="48" fill="currentColor" rx="4" opacity="0.1"/>
-              <path d="M24 16L32 24H28V32H20V24H16L24 16Z" fill="currentColor"/>
-            </svg>
+            <Upload size={48} className="text-gray-400 mb-2" />
             <p style={{ margin: "10px 0", color: "#666" }}>
               {aisFile ? `Selected: ${aisFile.name}` : "Select AIS CSV file or drag and drop"}
             </p>
@@ -1990,12 +1991,14 @@ ${data.slice(0, 3).map((row, idx) =>
                 cursor: (!aisFile || aisIsProcessing) ? "not-allowed" : "pointer"
               }}
             >
-              {aisIsProcessing ? "Processing..." : "Analyze AIS CSV"} 📊
+              <BarChart3 className="w-4 h-4" />
+              {aisIsProcessing ? "Processing..." : "Analyze AIS CSV"}
             </button>
             
             {(aisCsvData.length > 0 || aisAnalyzedData.length > 0) && (
               <button onClick={resetAis} style={dangerButtonStyle}>
-                Reset 🔄
+                <RotateCcw className="w-4 h-4 inline mr-2" />
+                Reset
               </button>
             )}
           </div>
@@ -2005,11 +2008,11 @@ ${data.slice(0, 3).map((row, idx) =>
         <div style={{
           marginTop: "20px",
           padding: "15px",
-          backgroundColor: "#e3f2fd",
+          backgroundColor: "#f3f4f6",
           borderRadius: "8px",
-          border: "1px solid #bbdefb"
+          border: "1px solid #d1d5db"
         }}>
-          <h4 style={{ margin: "0 0 10px 0", color: "#1565c0" }}>Expected AIS CSV Format:</h4>
+          <h4 style={{ margin: "0 0 10px 0", color: "#374151" }}>Expected AIS CSV Format:</h4>
           <p style={{ margin: "5px 0", fontSize: "14px", color: "#333" }}>
             <strong>Headers:</strong> Date | Equity | Asset Type | Purchase Amount | Sale Amount
           </p>
@@ -2074,15 +2077,17 @@ ${data.slice(0, 3).map((row, idx) =>
             flexWrap: "wrap",
             gap: "10px"
           }}>
-            <h3 style={{ margin: "0", color: "#2e7d32" }}>
+            <h3 style={{ margin: "0", color: "#374151" }}>
               AIS Analysis Results ({aisAnalyzedData.length} records)
             </h3>
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <button onClick={downloadAisAnalyzedCSV} style={secondaryButtonStyle}>
-                Download Detailed CSV 📥
+                <Download className="w-4 h-4 inline mr-2" />
+                Download Detailed CSV
               </button>
-              <button onClick={downloadAisAggregatedCSV} style={{...buttonStyle, backgroundColor: "#9c27b0"}}>
-                Download Aggregated CSV 📊
+              <button onClick={downloadAisAggregatedCSV} style={{...buttonStyle, backgroundColor: "#6b7280"}}>
+                <BarChart3 className="w-4 h-4 inline mr-2" />
+                Download Aggregated CSV
               </button>
             </div>
           </div>
@@ -2096,11 +2101,11 @@ ${data.slice(0, 3).map((row, idx) =>
           }}>
             <div style={{
               padding: "15px",
-              backgroundColor: "#fff3e0",
+              backgroundColor: "#f9fafb",
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ef6c00" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#6b7280" }}>
                 {aisAnalyzedData.filter(row => row['Asset Type'] === 'Short term').length}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Short Term Gains</div>
@@ -2111,18 +2116,18 @@ ${data.slice(0, 3).map((row, idx) =>
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#2e7d32" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 {aisAnalyzedData.filter(row => row['Asset Type'] === 'Long term').length}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Long Term Gains</div>
             </div>
             <div style={{
               padding: "15px",
-              backgroundColor: "#e3f2fd",
+              backgroundColor: "#f3f4f6",
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1976d2" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 ₹{aisAnalyzedData.reduce((sum, row) => sum + parseFloat(row['Gain Amount']), 0).toFixed(2)}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Total Gains</div>
@@ -2136,7 +2141,7 @@ ${data.slice(0, 3).map((row, idx) =>
                 <tr>
                   <th style={thStyle}>Date</th>
                   <th style={thStyle}>Equity</th>
-                  <th style={{...thStyle, backgroundColor: "#fff3e0"}}>ISIN (Extracted)</th>
+                  <th style={{...thStyle, backgroundColor: "#f9fafb"}}>ISIN (Extracted)</th>
                   <th style={thStyle}>Asset Type</th>
                   <th style={thStyle}>Purchase Amount</th>
                   <th style={thStyle}>Sale Amount</th>
@@ -2150,13 +2155,13 @@ ${data.slice(0, 3).map((row, idx) =>
                     <td style={{...tdStyle, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"}} title={row['Equity']}>
                       {row['Equity']}
                     </td>
-                    <td style={{...tdStyle, backgroundColor: "#fff3e0", fontWeight: "bold"}}>
+                    <td style={{...tdStyle, backgroundColor: "#f9fafb", fontWeight: "bold"}}>
                       {row['ISIN']}
                     </td>
                     <td style={{
                       ...tdStyle,
                       fontWeight: "bold",
-                      color: row['Asset Type'] === 'Long term' ? '#2e7d32' : '#ef6c00'
+                      color: row['Asset Type'] === 'Long term' ? '#374151' : '#6b7280'
                     }}>
                       {row['Asset Type']}
                     </td>
@@ -2165,7 +2170,7 @@ ${data.slice(0, 3).map((row, idx) =>
                     <td style={{
                       ...tdStyle,
                       fontWeight: "bold",
-                      color: parseFloat(row['Gain Amount']) >= 0 ? '#2e7d32' : '#d32f2f'
+                      color: parseFloat(row['Gain Amount']) >= 0 ? '#374151' : '#6b7280'
                     }}>
                       ₹{row['Gain Amount']}
                     </td>
@@ -2200,7 +2205,10 @@ ${data.slice(0, 3).map((row, idx) =>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
             {/* Demat File Upload */}
             <div style={{ padding: "20px", border: "1px solid #ddd", borderRadius: "8px" }}>
-              <h4 style={{ margin: "0 0 10px 0", color: "#666" }}>📊 Demat Data</h4>
+              <h4 style={{ margin: "0 0 10px 0", color: "#666" }}>
+                <BarChart3 className="w-4 h-4 inline mr-2" />
+                Demat Data
+              </h4>
               <input
                 type="file"
                 accept=".csv"
@@ -2214,13 +2222,21 @@ ${data.slice(0, 3).map((row, idx) =>
                 }}
               />
               <p style={{ margin: "5px 0", fontSize: "12px", color: "#666" }}>
-                {comparisonDematFile ? `✅ ${comparisonDematFile.name}` : "Select Demat CSV file"}
+                {comparisonDematFile ? (
+                  <span>
+                    <CheckCircle className="w-3 h-3 inline mr-1 text-gray-600" />
+                    {comparisonDematFile.name}
+                  </span>
+                ) : "Select Demat CSV file"}
               </p>
             </div>
             
             {/* AIS File Upload */}
             <div style={{ padding: "20px", border: "1px solid #ddd", borderRadius: "8px" }}>
-              <h4 style={{ margin: "0 0 10px 0", color: "#666" }}>📋 AIS Data</h4>
+              <h4 style={{ margin: "0 0 10px 0", color: "#666" }}>
+                <FileText className="w-4 h-4 inline mr-2" />
+                AIS Data
+              </h4>
               <input
                 type="file"
                 accept=".csv"
@@ -2234,7 +2250,12 @@ ${data.slice(0, 3).map((row, idx) =>
                 }}
               />
               <p style={{ margin: "5px 0", fontSize: "12px", color: "#666" }}>
-                {comparisonAisFile ? `✅ ${comparisonAisFile.name}` : "Select AIS CSV file"}
+                {comparisonAisFile ? (
+                  <span>
+                    <CheckCircle className="w-3 h-3 inline mr-1 text-gray-600" />
+                    {comparisonAisFile.name}
+                  </span>
+                ) : "Select AIS CSV file"}
               </p>
             </div>
           </div>
@@ -2245,17 +2266,19 @@ ${data.slice(0, 3).map((row, idx) =>
               disabled={!comparisonDematFile || !comparisonAisFile || comparisonIsProcessing}
               style={{
                 ...buttonStyle,
-                backgroundColor: "#4caf50",
+                backgroundColor: "#6b7280",
                 opacity: (!comparisonDematFile || !comparisonAisFile || comparisonIsProcessing) ? 0.6 : 1,
                 cursor: (!comparisonDematFile || !comparisonAisFile || comparisonIsProcessing) ? "not-allowed" : "pointer"
               }}
             >
-              {comparisonIsProcessing ? "Processing..." : "Compare Data"} 🔍
+              <Search className="w-4 h-4" />
+              {comparisonIsProcessing ? "Processing..." : "Compare Data"}
             </button>
             
             {comparisonData.length > 0 && (
               <button onClick={resetComparison} style={dangerButtonStyle}>
-                Reset 🔄
+                <RotateCcw className="w-4 h-4 inline mr-2" />
+                Reset
               </button>
             )}
           </div>
@@ -2269,7 +2292,7 @@ ${data.slice(0, 3).map((row, idx) =>
           borderRadius: "8px",
           border: "1px solid #c8e6c9"
         }}>
-          <h4 style={{ margin: "0 0 10px 0", color: "#2e7d32" }}>Comparison Features:</h4>
+          <h4 style={{ margin: "0 0 10px 0", color: "#374151" }}>Comparison Features:</h4>
           <ul style={{ margin: "5px 0", fontSize: "14px", color: "#333", paddingLeft: "20px" }}>
             <li>Aggregates both datasets by ISIN and Asset Type (Short term / Long term)</li>
             <li>Shows source data from both Demat and AIS separately</li>
@@ -2322,10 +2345,10 @@ ${data.slice(0, 3).map((row, idx) =>
             flexWrap: "wrap",
             gap: "10px"
           }}>
-            <h3 style={{ margin: "0", color: "#2e7d32" }}>
+            <h3 style={{ margin: "0", color: "#374151" }}>
               Comparison Results ({comparisonData.length} items)
             </h3>
-            <button onClick={downloadComparisonCSV} style={{...buttonStyle, backgroundColor: "#4caf50"}}>
+            <button onClick={downloadComparisonCSV} style={{...buttonStyle, backgroundColor: "#6b7280"}}>
               Download Comparison CSV 📥
             </button>
           </div>
@@ -2343,40 +2366,40 @@ ${data.slice(0, 3).map((row, idx) =>
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#2e7d32" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 {comparisonData.length}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Total Records</div>
             </div>
             <div style={{
               padding: "15px",
-              backgroundColor: "#fff3e0",
+              backgroundColor: "#f9fafb",
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#ef6c00" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 {comparisonData.filter(row => row['Asset Type'] === 'Short Term' || row['Asset Type'] === 'Short term').length}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Short Term</div>
             </div>
             <div style={{
               padding: "15px",
-              backgroundColor: "#e3f2fd",
+              backgroundColor: "#f3f4f6",
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#1976d2" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 {comparisonData.filter(row => row['Asset Type'] === 'Long Term' || row['Asset Type'] === 'Long term').length}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Long Term</div>
             </div>
             <div style={{
               padding: "15px",
-              backgroundColor: "#f3e5f5",
+              backgroundColor: "#f9fafb",
               borderRadius: "8px",
               textAlign: "center"
             }}>
-              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#7b1fa2" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", color: "#374151" }}>
                 ₹{comparisonData.reduce((sum, row) => sum + (row['Demat_Sale'] || 0) + (row['AIS_Sale'] || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
               <div style={{ fontSize: "14px", color: "#666" }}>Total Sale Amount</div>
@@ -2404,8 +2427,8 @@ ${data.slice(0, 3).map((row, idx) =>
                   <th style={thStyle}>Asset Type</th>
                   <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Demat Count</th>
                   <th style={{...thStyle, backgroundColor: "#e8f5e8"}}>Demat Sale (₹)</th>
-                  <th style={{...thStyle, backgroundColor: "#fff3e0"}}>AIS Count</th>
-                  <th style={{...thStyle, backgroundColor: "#fff3e0"}}>AIS Sale (₹)</th>
+                  <th style={{...thStyle, backgroundColor: "#f9fafb"}}>AIS Count</th>
+                  <th style={{...thStyle, backgroundColor: "#f9fafb"}}>AIS Sale (₹)</th>
                   <th style={{...thStyle, backgroundColor: "#ffebee"}}>Difference (₹)</th>
                 </tr>
               </thead>
@@ -2415,11 +2438,11 @@ ${data.slice(0, 3).map((row, idx) =>
                     backgroundColor: '#f8fff8' // Light green for all merged records
                   }}>
                     <td style={tdStyle}>{row['ISIN']}</td>
-                    <td style={{...tdStyle, fontWeight: "bold", color: "#1976d2"}}>{row['Equity Name']}</td>
+                    <td style={{...tdStyle, fontWeight: "bold", color: "#374151"}}>{row['Equity Name']}</td>
                     <td style={{
                       ...tdStyle,
                       fontWeight: "bold",
-                      color: row['Asset Type'] === 'Long Term' || row['Asset Type'] === 'Long term' ? '#2e7d32' : '#ef6c00'
+                      color: row['Asset Type'] === 'Long Term' || row['Asset Type'] === 'Long term' ? '#374151' : '#6b7280'
                     }}>
                       {row['Asset Type']}
                     </td>
@@ -2430,8 +2453,8 @@ ${data.slice(0, 3).map((row, idx) =>
                     <td style={{
                       ...tdStyle,
                       fontWeight: "bold",
-                      color: Math.abs(row['Sale_Diff']) < 0.01 ? '#2e7d32' : 
-                             row['Sale_Diff'] > 0 ? '#d32f2f' : '#1976d2'
+                      color: Math.abs(row['Sale_Diff']) < 0.01 ? '#374151' : 
+                             row['Sale_Diff'] > 0 ? '#6b7280' : '#9ca3af'
                     }}>
                       ₹{row['Sale_Diff'].toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
@@ -2439,8 +2462,8 @@ ${data.slice(0, 3).map((row, idx) =>
                 ))}
                 {/* Summary Row */}
                 <tr style={{
-                  backgroundColor: '#e3f2fd',
-                  borderTop: '2px solid #1976d2',
+                  backgroundColor: '#f3f4f6',
+                  borderTop: '2px solid #374151',
                   fontWeight: 'bold'
                 }}>
                   <td style={{...tdStyle, fontWeight: "bold"}}>TOTAL</td>
@@ -2518,16 +2541,8 @@ ${data.slice(0, 3).map((row, idx) =>
     boxShadow: "0 2px 8px rgba(37, 211, 102, 0.3)"
   }
 
-  const whatsappIconStyle = {
-    width: "20px",
-    height: "20px",
-    fill: "currentColor"
-  }
-
   const WhatsAppIcon = () => (
-    <svg style={whatsappIconStyle} viewBox="0 0 24 24">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.465 3.488"/>
-    </svg>
+    <MessageCircle size={20} className="text-gray-700" />
   )
 
   const handleWhatsAppClick = () => {
@@ -2540,7 +2555,7 @@ ${data.slice(0, 3).map((row, idx) =>
   const titleStyle = {
     fontSize: "1.5em",
     margin: "0 0 10px 0",
-    background: "linear-gradient(135deg, #2e7d32, #1976d2)",
+    background: "linear-gradient(135deg, #374151, #6b7280)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     fontWeight: "bold"
@@ -2548,7 +2563,7 @@ ${data.slice(0, 3).map((row, idx) =>
 
   const buttonStyle = {
     padding: "12px 24px",
-    backgroundColor: "#2e7d32",
+    backgroundColor: "#6b7280",
     color: "white",
     border: "none",
     borderRadius: "8px",
@@ -2590,128 +2605,92 @@ ${data.slice(0, 3).map((row, idx) =>
   }
 
   return (
-    <div style={cardStyle}>
-      <div style={containerStyle}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-5 font-sans">
+      <div className="bg-white p-10 rounded-2xl shadow-xl max-w-5xl mx-auto">
         {/* Header */}
-        <div style={headerStyle}>
-          {/* Logo */}
-          <div style={{ position: "absolute", top: "10px", left: "20px" }}>
+        <div className="text-center mb-8 relative">{/* Logo */}
+          <div className="absolute top-4 left-0">
             <a 
               href="/"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                textDecoration: "none",
-                color: "inherit"
-              }}
+              className="flex items-center gap-2 no-underline text-gray-900 hover:text-gray-700 transition-colors"
               title="Investment Data Analyzer - Home"
             >
-              <div style={{
-                height: "32px",
-                width: "32px",
-                backgroundColor: "#e8f5e8",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#3b82f6"
-              }}>
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{ color: "#3b82f6" }}
-                >
-                  <path
-                    d="M3 6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V6Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    fill="currentColor"
-                    fillOpacity="0.1"
-                  />
-                  <path d="M7 8H17M7 12H17M7 16H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <circle cx="17" cy="8" r="1" fill="currentColor" />
-                  <circle cx="17" cy="12" r="1" fill="currentColor" />
-                </svg>
+              <div className="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-700">
+                <BarChart3 size={20} className="text-gray-700" />
               </div>
-              <span style={{
-                fontSize: "18px",
-                fontWeight: "bold",
-                color: "#3b82f6"
-              }}>
-               Easy Bank Summary
+              <span className="text-lg font-bold text-gray-900">
+                Investment Analyzer
               </span>
             </a>
           </div>
 
-          <div style={{ position: "absolute", top: "10px", right: "20px" }}>
-            <button 
+          <div className="absolute top-4 right-0">
+            <Button 
               onClick={handleWhatsAppClick}
-              style={whatsappButtonStyle}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#128C7E"
-                e.target.style.transform = "translateY(-2px)"
-                e.target.style.boxShadow = "0 4px 12px rgba(37, 211, 102, 0.4)"
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#25D366"
-                e.target.style.transform = "translateY(0)"
-                e.target.style.boxShadow = "0 2px 8px rgba(37, 211, 102, 0.3)"
-              }}
+              className="bg-gray-600 hover:bg-gray-700 text-white rounded-full px-4 py-2 text-sm transition-all hover:shadow-lg flex items-center gap-2"
               title="Contact us on WhatsApp for support, feedback, or feature requests"
             >
-              <WhatsAppIcon />
+              <MessageCircle className="w-4 h-4" />
               Support
-            </button>
+            </Button>
           </div>
           
-          <h2 style={titleStyle}>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-4 bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent">
             Investment Data Analyzer
-          </h2>
-          <p style={{ color: "#666", margin: "0" }}>
+          </h1>
+          <p className="text-gray-600 text-lg">
             Analyze your investment data from Demat accounts and AIS statements
           </p>
           
           {/* Company Master Status */}
-          <div style={{
-            marginTop: "10px",
-            padding: "8px 12px",
-            backgroundColor: companyMasterLoaded ? "#d4edda" : "#fff3cd",
-            border: `1px solid ${companyMasterLoaded ? "#c3e6cb" : "#ffeaa7"}`,
-            borderRadius: "4px",
-            fontSize: "12px",
-            color: companyMasterLoaded ? "#155724" : "#856404"
-          }}>
+          <div className={`mt-4 px-3 py-2 rounded text-xs font-medium inline-block ${
+            companyMasterLoaded 
+              ? "bg-gray-100 text-gray-800 border border-gray-200" 
+              : "bg-gray-50 text-gray-600 border border-gray-300"
+          }`}>
             {companyMasterLoaded 
-              ? `✅ Company Master Data Loaded (${companyMasterData.size} companies)`
-              : "⏳ Loading company master data..."
+              ? (
+                <span>
+                  <CheckCircle className="w-3 h-3 inline mr-1 text-gray-600" />
+                  Company Master Data Loaded ({companyMasterData.size} companies)
+                </span>
+              )
+              : (
+                <span>
+                  <Clock className="w-3 h-3 inline mr-1 text-gray-500" />
+                  Loading company master data...
+                </span>
+              )
             }
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div style={tabContainerStyle}>
-          <button
-            style={activeTab === "demat" ? activeTabStyle : tabStyle}
+        <div className="flex bg-gray-100 p-1 rounded-lg mb-8">
+          <Button
+            variant={activeTab === "demat" ? "default" : "ghost"}
             onClick={() => setActiveTab("demat")}
+            className="flex-1"
           >
-            📊 Demat Data
-          </button>
-          <button
-            style={activeTab === "ais" ? activeTabStyle : tabStyle}
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Demat Data
+          </Button>
+          <Button
+            variant={activeTab === "ais" ? "default" : "ghost"}
             onClick={() => setActiveTab("ais")}
+            className="flex-1"
           >
-            📋 AIS Data
-          </button>
-          <button
-            style={activeTab === "comparison" ? activeTabStyle : tabStyle}
+            <FileText className="w-4 h-4 mr-2" />
+            AIS Data
+          </Button>
+          <Button
+            variant={activeTab === "comparison" ? "default" : "ghost"}
             onClick={() => setActiveTab("comparison")}
+            className="flex-1"
           >
-            🔍 Comparison
-          </button>
+            <Search className="w-4 h-4 mr-2" />
+            Comparison
+          </Button>
         </div>
 
         {/* Tab Content */}
@@ -2720,48 +2699,22 @@ ${data.slice(0, 3).map((row, idx) =>
         {activeTab === "comparison" && <ComparisonTab />}
 
         {/* Footer */}
-        <div style={{
-          textAlign: "center",
-          paddingTop: "30px",
-          borderTop: "1px solid #e0e0e0",
-          marginTop: "30px"
-        }}>
-          <div style={{ marginBottom: "15px" }}>
-            <button 
+        <div className="text-center pt-8 border-t border-gray-200 mt-8">
+          <div className="mb-4">
+            <Button 
               onClick={handleWhatsAppClick}
-              style={{
-                ...whatsappButtonStyle,
-                fontSize: "12px",
-                padding: "6px 12px"
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#128C7E"
-                e.target.style.transform = "translateY(-1px)"
-                e.target.style.boxShadow = "0 3px 10px rgba(37, 211, 102, 0.4)"
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#25D366"
-                e.target.style.transform = "translateY(0)"
-                e.target.style.boxShadow = "0 2px 8px rgba(37, 211, 102, 0.3)"
-              }}
+              className="bg-gray-600 hover:bg-gray-700 text-white rounded-full px-3 py-1.5 text-xs transition-all hover:shadow-lg flex items-center gap-2 mx-auto"
               title="Contact us on WhatsApp for support, feedback, or feature requests"
             >
-              <WhatsAppIcon />
+              <MessageCircle className="w-3 h-3" />
               Support & Feedback
-            </button>
+            </Button>
           </div>
-          <p style={{
-            fontSize: "12px",
-            color: "#999",
-            margin: "0"
-          }}>
-            Investment Data Analyzer 📈
+          <p className="text-xs text-gray-500 mb-2">
+            <TrendingUp className="w-3 h-3 inline mr-1" />
+            Investment Data Analyzer
           </p>
-          <p style={{
-            fontSize: "10px",
-            color: "#bbb",
-            margin: "5px 0 0 0"
-          }}>
+          <p className="text-xs text-gray-400">
             For support, feedback, or feature requests: +919741008286
           </p>
         </div>
