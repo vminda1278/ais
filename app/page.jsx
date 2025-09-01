@@ -911,20 +911,39 @@ ${data.slice(0, 3).map((row, idx) =>
   const createComparisonAnalysis = (dematData, aisData) => {
     console.log("🔄 Creating merged comparison analysis...")
     
+    // Helper function to normalize ISIN for consistent grouping
+    const normalizeISIN = (isinField) => {
+      if (!isinField) return ''
+      
+      // If it looks like a valid ISIN already, return it
+      if (isValidISINFormat(isinField)) {
+        return isinField.toUpperCase()
+      }
+      
+      // Try to extract ISIN from the field using our enhanced logic
+      const extracted = extractISINAndNameFromEquity(isinField)
+      return extracted.isin || ''
+    }
+    
     // Aggregate both datasets by ISIN and Asset Type
     const aggregated = {}
     
     // Process Demat data
     dematData.forEach(row => {
-      if (!row['ISIN']) return // Skip if no ISIN
+      const originalISIN = row['ISIN']
+      const normalizedISIN = normalizeISIN(originalISIN)
+      
+      console.log(`🔍 [DEMAT COMPARE] Original ISIN: "${originalISIN}" -> Normalized: "${normalizedISIN}"`)
+      
+      if (!normalizedISIN) return // Skip if no valid ISIN found
       
       // Normalize Asset Type for consistent grouping
       const normalizedAssetType = (row['Asset Type'] || '').toLowerCase().includes('short') ? 'Short Term' : 'Long Term'
-      const key = `${row['ISIN']}_${normalizedAssetType}`
+      const key = `${normalizedISIN}_${normalizedAssetType}`
       
       if (!aggregated[key]) {
         aggregated[key] = {
-          'ISIN': row['ISIN'],
+          'ISIN': normalizedISIN, // Use normalized ISIN
           'Equity Name': row['Equity Name'] || '', // Default to empty if not available
           'Asset Type': normalizedAssetType,
           'Demat_Count': 0,
@@ -945,15 +964,20 @@ ${data.slice(0, 3).map((row, idx) =>
     
     // Process AIS data
     aisData.forEach(row => {
-      if (!row['ISIN']) return // Skip if no ISIN
+      const originalISIN = row['ISIN']
+      const normalizedISIN = normalizeISIN(originalISIN)
+      
+      console.log(`🔍 [AIS COMPARE] Original ISIN: "${originalISIN}" -> Normalized: "${normalizedISIN}"`)
+      
+      if (!normalizedISIN) return // Skip if no valid ISIN found
       
       // Normalize Asset Type for consistent grouping
       const normalizedAssetType = (row['Asset Type'] || '').toLowerCase().includes('short') ? 'Short Term' : 'Long Term'
-      const key = `${row['ISIN']}_${normalizedAssetType}`
+      const key = `${normalizedISIN}_${normalizedAssetType}`
       
       if (!aggregated[key]) {
         aggregated[key] = {
-          'ISIN': row['ISIN'],
+          'ISIN': normalizedISIN, // Use normalized ISIN
           'Equity Name': row['Equity Name'] || '',
           'Asset Type': normalizedAssetType,
           'Demat_Count': 0,
@@ -1076,7 +1100,7 @@ ${data.slice(0, 3).map((row, idx) =>
       // Try different date formats
       let parsedDate = null
       
-      // Handle dates with dashes
+      // Handle dates with dashes - prioritize MM-DD-YYYY format
       if (cleanDate.includes('-')) {
         const parts = cleanDate.split('-')
         if (parts.length === 3) {
@@ -1087,20 +1111,28 @@ ${data.slice(0, 3).map((row, idx) =>
             console.log(`🔍 [DATE] Detected YYYY-MM-DD format`)
             parsedDate = new Date(parseInt(first), parseInt(second) - 1, parseInt(third))
           }
-          // Check if third part is 4 digits (likely DD-MM-YYYY format)
+          // Check if third part is 4 digits - try MM-DD-YYYY first (new priority)
           else if (third.length === 4 && parseInt(third) > 1900) {
-            console.log(`🔍 [DATE] Detected DD-MM-YYYY format`)
-            parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
-          }
-          // Fallback: try DD-MM-YYYY first, then MM-DD-YYYY
-          else {
-            console.log(`🔍 [DATE] Trying DD-MM-YYYY format`)
-            parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+            console.log(`🔍 [DATE] Trying MM-DD-YYYY format first (priority)`)
+            parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
             
-            // If this results in an invalid date, try MM-DD-YYYY
+            // If MM-DD-YYYY results in an invalid date, try DD-MM-YYYY
             if (isNaN(parsedDate.getTime())) {
-              console.log(`🔍 [DATE] DD-MM-YYYY failed, trying MM-DD-YYYY`)
-              parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+              console.log(`🔍 [DATE] MM-DD-YYYY failed, trying DD-MM-YYYY`)
+              parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+            } else {
+              console.log(`✅ [DATE] MM-DD-YYYY format successful`)
+            }
+          }
+          // Fallback: try MM-DD-YYYY first, then DD-MM-YYYY
+          else {
+            console.log(`🔍 [DATE] Trying MM-DD-YYYY format (ambiguous year)`)
+            parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+            
+            // If this results in an invalid date, try DD-MM-YYYY
+            if (isNaN(parsedDate.getTime())) {
+              console.log(`🔍 [DATE] MM-DD-YYYY failed, trying DD-MM-YYYY`)
+              parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
             }
           }
           
@@ -1108,7 +1140,7 @@ ${data.slice(0, 3).map((row, idx) =>
         }
       }
       
-      // Handle dates with slashes
+      // Handle dates with slashes - prioritize MM/DD/YYYY format
       if (!parsedDate || isNaN(parsedDate.getTime())) {
         if (cleanDate.includes('/')) {
           const parts = cleanDate.split('/')
@@ -1120,20 +1152,28 @@ ${data.slice(0, 3).map((row, idx) =>
               console.log(`🔍 [DATE] Detected YYYY/MM/DD format`)
               parsedDate = new Date(parseInt(first), parseInt(second) - 1, parseInt(third))
             }
-            // Check if third part is 4 digits (likely DD/MM/YYYY format)
+            // Check if third part is 4 digits - try MM/DD/YYYY first (new priority)
             else if (third.length === 4 && parseInt(third) > 1900) {
-              console.log(`🔍 [DATE] Detected DD/MM/YYYY format`)
-              parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
-            }
-            // Fallback: try DD/MM/YYYY first, then MM/DD/YYYY
-            else {
-              console.log(`🔍 [DATE] Trying DD/MM/YYYY format`)
-              parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+              console.log(`🔍 [DATE] Trying MM/DD/YYYY format first (priority)`)
+              parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
               
-              // If this results in an invalid date, try MM/DD/YYYY
+              // If MM/DD/YYYY results in an invalid date, try DD/MM/YYYY
               if (isNaN(parsedDate.getTime())) {
-                console.log(`🔍 [DATE] DD/MM/YYYY failed, trying MM/DD/YYYY`)
-                parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+                console.log(`🔍 [DATE] MM/DD/YYYY failed, trying DD/MM/YYYY`)
+                parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
+              } else {
+                console.log(`✅ [DATE] MM/DD/YYYY format successful`)
+              }
+            }
+            // Fallback: try MM/DD/YYYY first, then DD/MM/YYYY
+            else {
+              console.log(`🔍 [DATE] Trying MM/DD/YYYY format (ambiguous year)`)
+              parsedDate = new Date(parseInt(third), parseInt(first) - 1, parseInt(second))
+              
+              // If this results in an invalid date, try DD/MM/YYYY
+              if (isNaN(parsedDate.getTime())) {
+                console.log(`🔍 [DATE] MM/DD/YYYY failed, trying DD/MM/YYYY`)
+                parsedDate = new Date(parseInt(third), parseInt(second) - 1, parseInt(first))
               }
             }
             
@@ -1394,10 +1434,60 @@ ${data.slice(0, 3).map((row, idx) =>
       return result
     }
     
+    // Test function for ISIN normalization in comparison
+    window.testISINNormalization = () => {
+      const testCases = [
+        "INF740KA1EU7",
+        "DSP NIFTY 1D RATE LIQUID ETF-INF740KA1EU7",
+        "INE670A01012",
+        "TATA ELXSI LIMITED EQUITY SHARES(INE670A01012)"
+      ]
+      
+      console.log("🚀 Testing ISIN Normalization for Comparison:")
+      testCases.forEach((test, i) => {
+        const normalizeISIN = (isinField) => {
+          if (!isinField) return ''
+          if (isValidISINFormat(isinField)) {
+            return isinField.toUpperCase()
+          }
+          const extracted = extractISINAndNameFromEquity(isinField)
+          return extracted.isin || ''
+        }
+        
+        const normalized = normalizeISIN(test)
+        console.log(`${i+1}. "${test}" -> "${normalized}"`)
+      })
+    }
+    
+    // Test function for date parsing with MM/DD/YYYY priority
+    window.testDateParsing = () => {
+      const testDates = [
+        "12/30/2020",  // Should be December 30, 2020 (MM/DD/YYYY)
+        "03/15/2023",  // Should be March 15, 2023 (MM/DD/YYYY)
+        "01/05/2024",  // Should be January 5, 2024 (MM/DD/YYYY)
+        "2023-12-25",  // Should be December 25, 2023 (YYYY-MM-DD)
+        "15/03/2023",  // Should fallback to DD/MM/YYYY (March 15, 2023)
+        "30/12/2020"   // Should fallback to DD/MM/YYYY (December 30, 2020)
+      ]
+      
+      console.log("🚀 Testing Date Parsing with MM/DD/YYYY Priority:")
+      testDates.forEach((dateStr, i) => {
+        console.log(`\n${i+1}. Testing: "${dateStr}"`)
+        try {
+          const parsed = parseDate(dateStr)
+          console.log(`✅ Result: ${parsed.toDateString()} (${parsed.getMonth() + 1}/${parsed.getDate()}/${parsed.getFullYear()})`)
+        } catch (error) {
+          console.log(`❌ Error: ${error.message}`)
+        }
+      })
+    }
+    
     console.log("🎯 Enhanced ISIN functions available!")
     console.log("Try: window.testEnhancedISIN('TATA ELXSI LIMITED EQUITY SHARES - INE670A01012')")
     console.log("Or: window.testAllISINFormats()")
     console.log("Test Pipe: window.testPipeFormat()")
+    console.log("Test Normalization: window.testISINNormalization()")
+    console.log("Test Date Parsing: window.testDateParsing()")
     console.log("Test Demat: window.testDematEnhancedExtraction({'Security Name': 'TATA ELXSI LIMITED EQUITY SHARES(INE670A01012)'})")
     window.reloadCompanyMaster = () => {
       console.log("🔄 Reloading company master data...")
