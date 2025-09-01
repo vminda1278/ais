@@ -202,9 +202,10 @@ export default function InvestmentAnalyzerPage() {
 
     // Method 2: Look for ISIN after dash or other separators
     // Examples: "TATA ELXSI LIMITED EQUITY SHARES - INE670A01012"
+    // Examples: "UTI Nifty200 Momentum 30 Index Fund - Regular Plan - Growth | INF789F1AUS7"
     if (!isin) {
       console.log(`🔍 [DEBUG] Method 1 failed, trying Method 2 (separators)`)
-      const separators = [' - ', ' # ', ' EQ ', ' EQUITY ', ' : ', '\t']
+      const separators = [' | ', ' - ', ' # ', ' EQ ', ' EQUITY ', ' : ', '\t']
       
       for (const separator of separators) {
         const separatorIndex = cleanInput.indexOf(separator)
@@ -1330,7 +1331,8 @@ ${data.slice(0, 3).map((row, idx) =>
         "TATA ELXSI LIMITED EQUITY SHARES - INE670A01012",
         "RELIANCE INDUSTRIES LTD: INE002A01018",
         "HDFC BANK\tINE040A01034",
-        "INFOSYS # INE009A01021"
+        "INFOSYS # INE009A01021",
+        "UTI Nifty200 Momentum 30 Index Fund - Regular Plan - Growth | INF789F1AUS7"
       ]
       
       console.log("🚀 Testing all ISIN formats...")
@@ -1340,9 +1342,63 @@ ${data.slice(0, 3).map((row, idx) =>
       })
     }
     
+    // Test function for Demat enhanced extraction
+    window.testDematEnhancedExtraction = (mockRow) => {
+      console.log("🚀 Testing Demat Enhanced ISIN Extraction")
+      console.log("Mock row:", mockRow)
+      
+      // Simulate the enhanced extraction logic
+      let extractedISIN = ''
+      let extractedName = ''
+      
+      if (mockRow['ISIN'] && isValidISINFormat(mockRow['ISIN'])) {
+        console.log(`🔍 [TEST] Using ISIN from column: ${mockRow['ISIN']}`)
+        extractedISIN = mockRow['ISIN']
+        
+        if (companyMasterData.has(extractedISIN)) {
+          const masterRecord = companyMasterData.get(extractedISIN)
+          extractedName = masterRecord.name
+          console.log(`✅ [TEST] Found company name from master: ${extractedName}`)
+        }
+      } else {
+        console.log(`🔍 [TEST] ISIN column invalid/empty, trying advanced extraction`)
+        
+        const fieldsToCheck = ['Security Name', 'Equity', 'Company Name', 'Description', 'Security', 'Script Name']
+        
+        for (const fieldName of fieldsToCheck) {
+          if (mockRow[fieldName]) {
+            console.log(`🔍 [TEST] Checking field "${fieldName}": ${mockRow[fieldName]}`)
+            const extracted = extractISINAndNameFromEquity(mockRow[fieldName])
+            if (extracted.isin) {
+              extractedISIN = extracted.isin
+              extractedName = extracted.name
+              console.log(`✅ [TEST] Advanced extraction SUCCESS from "${fieldName}"!`)
+              console.log(`✅ [TEST] ISIN: ${extractedISIN}, Name: ${extractedName}`)
+              break
+            }
+          }
+        }
+      }
+      
+      console.log(`🎯 [TEST] Final result - ISIN: ${extractedISIN}, Name: ${extractedName}`)
+      return { isin: extractedISIN, name: extractedName }
+    }
+    
+    // Test function specifically for pipe separator format
+    window.testPipeFormat = () => {
+      const pipeTest = "UTI Nifty200 Momentum 30 Index Fund - Regular Plan - Growth | INF789F1AUS7"
+      console.log("🚀 Testing Pipe Separator Format:")
+      console.log(`Input: "${pipeTest}"`)
+      const result = extractISINAndNameFromEquity(pipeTest)
+      console.log("Result:", result)
+      return result
+    }
+    
     console.log("🎯 Enhanced ISIN functions available!")
     console.log("Try: window.testEnhancedISIN('TATA ELXSI LIMITED EQUITY SHARES - INE670A01012')")
     console.log("Or: window.testAllISINFormats()")
+    console.log("Test Pipe: window.testPipeFormat()")
+    console.log("Test Demat: window.testDematEnhancedExtraction({'Security Name': 'TATA ELXSI LIMITED EQUITY SHARES(INE670A01012)'})")
     window.reloadCompanyMaster = () => {
       console.log("🔄 Reloading company master data...")
       loadCompanyMasterData()
@@ -1544,10 +1600,12 @@ ${data.slice(0, 3).map((row, idx) =>
 📊 Headers count: ${headers.length}
       `.trim())
       
-      const expectedHeaders = ['Purchase Date', 'Sale Date', 'Purchase Amount', 'Sale Amount', 'ISIN']
-      console.log("🎯 Expected headers:", expectedHeaders)
+      const expectedHeaders = ['Purchase Date', 'Sale Date', 'Purchase Amount', 'Sale Amount']
+      const optionalHeaders = ['ISIN', 'Security Name', 'Equity', 'Company Name', 'Description', 'Security', 'Script Name']
+      console.log("🎯 Required headers:", expectedHeaders)
+      console.log("🎯 Optional headers (for ISIN extraction):", optionalHeaders)
       
-      // Check each expected header individually
+      // Check each required header individually
       const missingHeaders = []
       const foundHeaders = []
       
@@ -1555,25 +1613,47 @@ ${data.slice(0, 3).map((row, idx) =>
         const found = headers.find(h => h.toLowerCase().trim() === expectedHeader.toLowerCase().trim())
         if (found) {
           foundHeaders.push({expected: expectedHeader, found: found})
-          console.log(`✅ Found header: "${expectedHeader}" matches "${found}"`)
+          console.log(`✅ Found required header: "${expectedHeader}" matches "${found}"`)
         } else {
           missingHeaders.push(expectedHeader)
-          console.log(`❌ Missing header: "${expectedHeader}"`)
+          console.log(`❌ Missing required header: "${expectedHeader}"`)
           console.log(`   Available headers: ${headers.map(h => `"${h}"`).join(', ')}`)
         }
       })
       
-      console.log("📈 Summary - Found:", foundHeaders.length, "Missing:", missingHeaders.length)
+      // Check for optional headers that can help with ISIN extraction
+      const foundOptionalHeaders = []
+      optionalHeaders.forEach(optionalHeader => {
+        const found = headers.find(h => h.toLowerCase().trim() === optionalHeader.toLowerCase().trim())
+        if (found) {
+          foundOptionalHeaders.push({expected: optionalHeader, found: found})
+          console.log(`✅ Found optional header for ISIN extraction: "${optionalHeader}" matches "${found}"`)
+        }
+      })
       
-      // Validate headers
-      const hasAllHeaders = missingHeaders.length === 0
-      if (!hasAllHeaders) {
+      console.log("📈 Summary - Required found:", foundHeaders.length, "Missing:", missingHeaders.length)
+      console.log("📈 Summary - Optional found:", foundOptionalHeaders.length, "for ISIN extraction")
+      
+      // Validate required headers
+      const hasAllRequiredHeaders = missingHeaders.length === 0
+      if (!hasAllRequiredHeaders) {
         console.error("❌ Header validation failed!")
-        console.error("Missing headers:", missingHeaders)
+        console.error("Missing required headers:", missingHeaders)
         console.error("Found headers:", headers)
-        throw new Error(`CSV must contain these headers: ${expectedHeaders.join(', ')}. 
+        throw new Error(`CSV must contain these required headers: ${expectedHeaders.join(', ')}. 
         Found headers: ${headers.join(', ')}. 
-        Missing: ${missingHeaders.join(', ')}`)
+        Missing: ${missingHeaders.join(', ')}.
+        
+        Note: ISIN column is now optional - ISINs can be extracted from other text fields like Security Name, Company Name, etc.`)
+      }
+      
+      // Warn if no optional headers are found for ISIN extraction
+      if (foundOptionalHeaders.length === 0) {
+        console.warn("⚠️ No optional headers found for ISIN extraction. Ensure your data contains ISIN information in text fields.")
+        setDebugInfo(prevDebug => prevDebug + `
+⚠️ Warning: No columns found that typically contain ISIN data
+🔍 ISIN extraction will attempt to find ISIN codes in any available text fields
+        `)
       }
 
       console.log("🔄 Starting data parsing with delimiter:", delimiter)
@@ -1586,7 +1666,7 @@ ${data.slice(0, 3).map((row, idx) =>
         const values = parseCSVLine(lines[i], delimiter)
         console.log(`📝 Line ${i} values:`, values, "Count:", values.length)
         
-        if (values.length >= 5) {
+        if (values.length >= 4) { // Changed from 5 to 4 since ISIN is now optional
           const row = {}
           headers.forEach((header, index) => {
             // Clean up the value by removing surrounding quotes if present
@@ -1597,26 +1677,75 @@ ${data.slice(0, 3).map((row, idx) =>
             row[header] = cleanValue
           })
           
-          // Add company name lookup using ISIN from master data
-          if (row['ISIN']) {
-            console.log(`🔍 [DEMAT] Looking up company name for ISIN: ${row['ISIN']}`)
-            if (companyMasterData.has(row['ISIN'])) {
-              const masterRecord = companyMasterData.get(row['ISIN'])
-              row['Equity Name'] = masterRecord.name
-              console.log(`✅ [DEMAT] Found company name: ${masterRecord.name}`)
-            } else {
-              row['Equity Name'] = ''
-              console.log(`⚠️ [DEMAT] No company name found for ISIN: ${row['ISIN']}`)
+          // Enhanced ISIN and company name extraction for Demat data
+          // First try to use ISIN column if available and valid
+          let extractedISIN = ''
+          let extractedName = ''
+          
+          if (row['ISIN'] && isValidISINFormat(row['ISIN'])) {
+            console.log(`🔍 [DEMAT] Using ISIN from column: ${row['ISIN']}`)
+            extractedISIN = row['ISIN']
+            
+            // Look up company name from master data
+            if (companyMasterData.has(extractedISIN)) {
+              const masterRecord = companyMasterData.get(extractedISIN)
+              extractedName = masterRecord.name
+              console.log(`✅ [DEMAT] Found company name from master: ${extractedName}`)
             }
           } else {
-            row['Equity Name'] = ''
-            console.log(`⚠️ [DEMAT] No ISIN provided for lookup`)
+            // Try to extract ISIN from other fields using advanced logic
+            console.log(`🔍 [DEMAT] ISIN column invalid/empty, trying advanced extraction`)
+            
+            // Check common fields that might contain ISIN information
+            const fieldsToCheck = ['Security Name', 'Equity', 'Company Name', 'Description', 'Security', 'Script Name']
+            
+            for (const fieldName of fieldsToCheck) {
+              if (row[fieldName]) {
+                console.log(`🔍 [DEMAT] Checking field "${fieldName}": ${row[fieldName]}`)
+                const extracted = extractISINAndNameFromEquity(row[fieldName])
+                if (extracted.isin) {
+                  extractedISIN = extracted.isin
+                  extractedName = extracted.name
+                  console.log(`✅ [DEMAT] Advanced extraction SUCCESS from "${fieldName}"!`)
+                  console.log(`✅ [DEMAT] ISIN: ${extractedISIN}, Name: ${extractedName}`)
+                  break
+                }
+              }
+            }
+            
+            // If still no ISIN found, try any field that contains text
+            if (!extractedISIN) {
+              console.log(`🔍 [DEMAT] Trying extraction from any text field...`)
+              for (const [fieldName, fieldValue] of Object.entries(row)) {
+                if (fieldValue && typeof fieldValue === 'string' && fieldValue.length > 10) {
+                  console.log(`🔍 [DEMAT] Checking field "${fieldName}": ${fieldValue}`)
+                  const extracted = extractISINAndNameFromEquity(fieldValue)
+                  if (extracted.isin) {
+                    extractedISIN = extracted.isin
+                    extractedName = extracted.name
+                    console.log(`✅ [DEMAT] Advanced extraction SUCCESS from "${fieldName}"!`)
+                    console.log(`✅ [DEMAT] ISIN: ${extractedISIN}, Name: ${extractedName}`)
+                    break
+                  }
+                }
+              }
+            }
+          }
+          
+          // Update row with extracted values
+          row['ISIN'] = extractedISIN
+          row['Equity Name'] = extractedName || ''
+          
+          if (extractedISIN) {
+            console.log(`✅ [DEMAT] Final result - ISIN: ${extractedISIN}, Name: ${extractedName}`)
+          } else {
+            console.log(`⚠️ [DEMAT] No ISIN found for this row`)
           }
           
           data.push(row)
           console.log(`✅ Line ${i} parsed:`, row)
         } else {
-          console.log(`⚠️ Line ${i} skipped - insufficient columns (${values.length} < 5)`)
+          console.log(`⚠️ Line ${i} skipped - insufficient columns (${values.length} < 4)`)
         }
       }
 
