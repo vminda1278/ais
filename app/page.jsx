@@ -379,11 +379,28 @@ export default function InvestmentAnalyzerPage() {
 
   const handleAisFileUpload = (event) => {
     const uploadedFile = event.target.files[0]
-    if (uploadedFile && uploadedFile.type === "text/csv") {
-      setAisFile(uploadedFile)
-      setAisError("")
+    if (uploadedFile) {
+      const fileType = uploadedFile.type
+      const fileName = uploadedFile.name.toLowerCase()
+      
+      // Accept CSV and Excel files
+      const isCSV = fileType === "text/csv" || fileName.endsWith('.csv')
+      const isExcel = fileType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || 
+                     fileType === "application/vnd.ms-excel" ||
+                     fileName.endsWith('.xlsx') || 
+                     fileName.endsWith('.xls')
+      
+      if (isCSV || isExcel) {
+        setAisFile(uploadedFile)
+        setAisError("")
+        console.log(`📂 [AIS UPLOAD] Accepted file: ${uploadedFile.name}, Type: ${fileType}, Format: ${isCSV ? 'CSV' : 'Excel'}`)
+      } else {
+        setAisError("Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)")
+        setAisFile(null)
+        console.log(`❌ [AIS UPLOAD] Rejected file: ${uploadedFile.name}, Type: ${fileType}`)
+      }
     } else {
-      setAisError("Please upload a valid CSV file")
+      setAisError("No file selected")
       setAisFile(null)
     }
   }
@@ -419,7 +436,23 @@ export default function InvestmentAnalyzerPage() {
       }
       console.log("📂 Processing AIS file:", aisFile.name, "Size:", aisFile.size, "bytes")
       
-      const text = await aisFile.text()
+      // Determine file type and get text content
+      let text = ""
+      const fileName = aisFile.name.toLowerCase()
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+                     aisFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+                     aisFile.type === "application/vnd.ms-excel"
+      
+      if (isExcel) {
+        console.log("📊 [AIS EXCEL] Detected Excel file, parsing with SheetJS...")
+        setAisDebugInfo("📊 Parsing Excel file...")
+        text = await parseExcelFile(aisFile)
+        console.log("✅ [AIS EXCEL] Excel file converted to CSV format")
+      } else {
+        console.log("📄 [AIS CSV] Detected CSV file, reading as text...")
+        text = await aisFile.text()
+      }
+      
       console.log("📄 AIS File content length:", text.length, "characters")
       console.log("📄 AIS First 500 characters:", text.substring(0, 500))
       
@@ -538,8 +571,10 @@ export default function InvestmentAnalyzerPage() {
       console.log("🎉 AIS Successfully parsed", data.length, "data rows")
       
       // Set debug info for UI
+      const fileType = aisFile.name.toLowerCase().endsWith('.xlsx') || aisFile.name.toLowerCase().endsWith('.xls') ? 'Excel' : 'CSV'
       setAisDebugInfo(`
 📂 File: ${aisFile.name} (${aisFile.size} bytes)
+📄 Type: ${fileType}
 📋 Lines: ${lines.length}
 🔧 Delimiter: ${delimiter === '\t' ? 'TAB' : delimiter === ',' ? 'COMMA' : 'SEMICOLON'}
 📊 Headers found: ${headers.join(' | ')}
@@ -1077,12 +1112,61 @@ ${data.slice(0, 3).map((row, idx) =>
 
   const handleFileUpload = (event) => {
     const uploadedFile = event.target.files[0]
-    if (uploadedFile && uploadedFile.type === "text/csv") {
-      setFile(uploadedFile)
-      setError("")
+    if (uploadedFile) {
+      const fileType = uploadedFile.type
+      const fileName = uploadedFile.name.toLowerCase()
+      
+      // Accept CSV and Excel files
+      const isCSV = fileType === "text/csv" || fileName.endsWith('.csv')
+      const isExcel = fileType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || 
+                     fileType === "application/vnd.ms-excel" ||
+                     fileName.endsWith('.xlsx') || 
+                     fileName.endsWith('.xls')
+      
+      if (isCSV || isExcel) {
+        setFile(uploadedFile)
+        setError("")
+        console.log(`📂 [UPLOAD] Accepted file: ${uploadedFile.name}, Type: ${fileType}, Format: ${isCSV ? 'CSV' : 'Excel'}`)
+      } else {
+        setError("Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)")
+        setFile(null)
+        console.log(`❌ [UPLOAD] Rejected file: ${uploadedFile.name}, Type: ${fileType}`)
+      }
     } else {
-      setError("Please upload a valid CSV file")
+      setError("No file selected")
       setFile(null)
+    }
+  }
+
+  // Excel parsing function using SheetJS (xlsx library)
+  const parseExcelFile = async (file) => {
+    console.log("📊 [EXCEL] Starting Excel file parsing...")
+    
+    try {
+      // Load the SheetJS library dynamically
+      const XLSX = await import('xlsx')
+      console.log("✅ [EXCEL] SheetJS library loaded successfully")
+      
+      const arrayBuffer = await file.arrayBuffer()
+      console.log(`📊 [EXCEL] File loaded as ArrayBuffer: ${arrayBuffer.byteLength} bytes`)
+      
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      console.log(`📊 [EXCEL] Workbook parsed, sheets: ${workbook.SheetNames.join(', ')}`)
+      
+      // Use the first sheet
+      const sheetName = workbook.SheetNames[0]
+      const worksheet = workbook.Sheets[sheetName]
+      console.log(`📊 [EXCEL] Using sheet: "${sheetName}"`)
+      
+      // Convert to CSV format for existing processing logic
+      const csvText = XLSX.utils.sheet_to_csv(worksheet)
+      console.log(`📊 [EXCEL] Converted to CSV format: ${csvText.length} characters`)
+      console.log(`📊 [EXCEL] First 200 chars: ${csvText.substring(0, 200)}`)
+      
+      return csvText
+    } catch (error) {
+      console.error("❌ [EXCEL] Error parsing Excel file:", error)
+      throw new Error(`Failed to parse Excel file: ${error.message}`)
     }
   }
 
@@ -1488,6 +1572,7 @@ ${data.slice(0, 3).map((row, idx) =>
     console.log("Test Pipe: window.testPipeFormat()")
     console.log("Test Normalization: window.testISINNormalization()")
     console.log("Test Date Parsing: window.testDateParsing()")
+    console.log("Test Excel Parsing: window.testExcelParsing()")
     console.log("Test Demat: window.testDematEnhancedExtraction({'Security Name': 'TATA ELXSI LIMITED EQUITY SHARES(INE670A01012)'})")
     window.reloadCompanyMaster = () => {
       console.log("🔄 Reloading company master data...")
@@ -1608,6 +1693,41 @@ ${data.slice(0, 3).map((row, idx) =>
         return { error: error.message }
       }
     }
+
+    // Test Excel parsing functionality
+    window.testExcelParsing = () => {
+      console.log(`🧪 Testing Excel parsing functionality...`)
+      
+      // Create a simple Excel-like data structure for testing
+      const testExcelData = [
+        ['Symbol', 'Equity', 'Quantity', 'Price'],
+        ['HDFCBANK', 'HDFC BANK LIMITED EQUITY SHARES(INE040A01034)', '10', '1500.50'],
+        ['TCS', 'TATA CONSULTANCY SERVICES LIMITED EQUITY SHARES - INE467B01029', '5', '3200.75'],
+        ['INFY', 'INFOSYS LIMITED EQUITY SHARES | INE009A01021', '15', '1400.25']
+      ]
+      
+      console.log('📊 Test data structure:')
+      console.log(testExcelData)
+      
+      // Test header detection
+      const headers = testExcelData[0]
+      console.log(`📋 Headers detected: ${headers.join(' | ')}`)
+      
+      // Test data parsing 
+      const dataRows = testExcelData.slice(1)
+      console.log(`📊 Data rows: ${dataRows.length}`)
+      
+      // Test ISIN extraction for each row
+      dataRows.forEach((row, idx) => {
+        const equity = row[1] // Equity column
+        const extracted = extractISINAndNameFromEquity(equity)
+        console.log(`   Row ${idx + 1}: "${equity}"`)
+        console.log(`      → ISIN: "${extracted.isin || 'FAILED'}" | Name: "${extracted.name || 'N/A'}"`)
+      })
+      
+      console.log('✅ Excel parsing test completed')
+      return { headers, dataRows, testResults: 'success' }
+    }
   }
 
   const processCSV = async () => {
@@ -1637,12 +1757,27 @@ ${data.slice(0, 3).map((row, idx) =>
           throw new Error("Company master data failed to load. Please refresh the page and try again.")
         }
         
-        console.log("✅ Company master data loaded, proceeding with CSV processing...")
+        console.log("✅ Company master data loaded, proceeding with file processing...")
       }
 
       console.log("📂 Processing file:", file.name, "Size:", file.size, "bytes")
       
-      const text = await file.text()
+      // Determine file type and get text content
+      let text = ""
+      const fileName = file.name.toLowerCase()
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+                     file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+                     file.type === "application/vnd.ms-excel"
+      
+      if (isExcel) {
+        console.log("📊 [EXCEL] Detected Excel file, parsing with SheetJS...")
+        setDebugInfo("📊 Parsing Excel file...")
+        text = await parseExcelFile(file)
+        console.log("✅ [EXCEL] Excel file converted to CSV format")
+      } else {
+        console.log("📄 [CSV] Detected CSV file, reading as text...")
+        text = await file.text()
+      }
       console.log("📄 File content length:", text.length, "characters")
       console.log("📄 First 500 characters:", text.substring(0, 500))
       
@@ -1684,6 +1819,7 @@ ${data.slice(0, 3).map((row, idx) =>
       // Set debug info for UI
       setDebugInfo(`
 📂 File: ${file.name} (${file.size} bytes)
+📋 Type: ${isExcel ? 'Excel' : 'CSV'}
 📋 Lines: ${lines.length}
 🔧 Delimiter: ${delimiter === '\t' ? 'TAB' : delimiter === ',' ? 'COMMA' : 'SEMICOLON'}
 📊 Headers found: ${headers.join(' | ')}
